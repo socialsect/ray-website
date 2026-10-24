@@ -1,0 +1,76 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ray's Website</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            color: #fff;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: "Courier New", monospace;
+        }
+
+        h1 {
+            font-size: clamp(18px, 3vw, 28px);
+            font-weight: 400;
+            text-align: center;
+            letter-spacing: 1px;
+            padding: 20px;
+        }
+
+        .cursor {
+            display: inline-block;
+            width: 2px;
+            height: 1em;
+            background: white;
+            margin-left: 4px;
+            vertical-align: -2px;
+            animation: blink 0.8s steps(1) infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>
+        <span id="text"></span><span class="cursor"></span>
+    </h1>
+
+    <script>
+        const message = "Hi, welcome to Ray's website.";
+        const textElement = document.getElementById("text");
+        let index = 0;
+
+        function typeText() {
+            if (index < message.length) {
+                textElement.textContent += message.charAt(index);
+                index++;
+                setTimeout(typeText, 85);
+            }
+        }
+
+        window.onload = () => {
+            setTimeout(typeText, 500);
+        };
+    </script>
+
+</body>
+</html>
