@@ -267,8 +267,9 @@ export default function Mind({ regions, children }) {
           } else if (id === "close") {
             view = wide ? { x: 1.05, y: 0.12, z: 6.2, scale: 0.82, rot: 0 } : { x: 0, y: 1.2, z: 8.4, scale: 0.58, rot: 0 };
           } else {
-            const side = chapter % 2 === 0 ? 1 : -1;
-            view = wide ? { x: side * 0.95, y: -0.05, z: 6, scale: 0.82, rot: -side * 0.3 } : { x: 0, y: 0.62, z: phone ? 8.4 : 7.6, scale: 0.72, rot: 0 };
+            // The object stands in front of its chapter's photograph, on the stage side.
+            const side = chapter % 2 === 0 ? -1 : 1;
+            view = wide ? { x: side * 1.32, y: 0.12, z: 6, scale: 0.74, rot: -side * 0.3 } : { x: 0, y: 0.62, z: phone ? 8.4 : 7.6, scale: 0.72, rot: 0 };
           }
           mind.setView(view);
 
@@ -287,6 +288,13 @@ export default function Mind({ regions, children }) {
 
           // On narrow screens the form sits above the words, then steps back for them.
           const canvas = canvasRef.current;
+          if (canvas) {
+            // In front of the page from the intro on, so each object stands before its photograph;
+            // behind the name in the opening; hidden once the close has passed.
+            const closeEl = sections[sections.length - 1];
+            canvas.style.zIndex = id === "hero" || !wide ? "0" : "15";
+            canvas.style.visibility = closeEl && closeEl.getBoundingClientRect().bottom < 0 ? "hidden" : "visible";
+          }
           if (canvas) canvas.style.opacity = !wide && (chapter >= 0 || id === "intro") ? String(smooth(0.16, 0.26, p) * (1 - 0.82 * smooth(0.33, 0.47, p))) : "1";
 
           // Nothing to draw once the page has passed the close.

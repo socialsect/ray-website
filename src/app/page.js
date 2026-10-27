@@ -80,25 +80,35 @@ function Scrub({ text }) {
 
 function Chapter({ index, region, subtitle, body, children }) {
   const p = PHOTOS[region.id];
-  // The form takes one side of the screen; the words take the other.
-  const even = index % 2 === 0;
-  const textSide = even ? "lg:col-start-1" : "lg:col-start-8";
-  const formSide = even ? "lg:col-start-8" : "lg:col-start-1";
+  // A spread: the stage (its real place, with the real object in front of it)
+  // on one side, the words on the other. Sides alternate down the page.
+  const stageLeft = index % 2 === 0;
+  const stageCols = stageLeft ? "lg:col-start-1" : "lg:col-start-7";
+  const textCols = stageLeft ? "lg:col-start-8" : "lg:col-start-1";
+  const photo = (
+    // eslint-disable-next-line @next/next/no-img-element -- pre-built static WebP
+    <img src={optSrc(p.src, 1600)} srcSet={optSrcSet(p.src)} sizes="(min-width: 1024px) 50vw, 100vw" alt={p.alt} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+  );
   return (
-    <section id={region.id} data-mind={region.id} aria-labelledby={`${region.id}-title`} className="relative flex min-h-[160svh] items-center overflow-x-clip">
-      {/* The chapter's name, set huge, drifts across the page as it is read. */}
-      <span
-        aria-hidden="true"
-        data-drift
-        data-word={region.name}
-        className="pointer-events-none absolute left-0 top-[18%] whitespace-nowrap font-serif text-[34vw] leading-none tracking-[-0.05em] before:content-[attr(data-word)]"
-        style={{ color: region.color, opacity: 0.09 }}
-      />
-      <div className="relative grid w-full px-5 py-24 md:px-8 lg:min-h-svh lg:grid-cols-12 lg:items-center lg:gap-8 lg:py-0">
-        <div data-reveal-group className={`lg:col-span-5 lg:row-start-1 ${textSide}`}>
-          {/* On narrow screens the form fills this space before the words arrive. */}
+    <section id={region.id} data-mind={region.id} aria-labelledby={`${region.id}-title`} className="relative lg:h-[200svh]">
+      {/* The spread holds still while it is read. */}
+      <div className="grid px-5 py-24 md:px-8 lg:sticky lg:top-0 lg:h-svh lg:grid-cols-12 lg:items-center lg:gap-x-10 lg:py-0">
+        <figure className={`hidden lg:col-span-6 lg:row-start-1 lg:block ${stageCols}`}>
+          <div data-photo className="relative h-[72svh] overflow-hidden bg-[#eceae6]">
+            {photo}
+            {/* A light veil, so the object in front reads clearly. */}
+            <div aria-hidden="true" className="absolute inset-0 bg-white/35" />
+          </div>
+          <figcaption className="mt-4 flex items-baseline justify-between gap-6 text-[15px]">
+            <span>{FORMS[region.id]}</span>
+            <span className="shrink-0 text-ink/60">{p.caption}</span>
+          </figcaption>
+        </figure>
+
+        <div data-reveal-group className={`lg:col-span-5 lg:row-start-1 ${textCols}`}>
+          {/* On narrow screens the object fills this space before the words arrive. */}
           <div aria-hidden="true" className="h-[52svh] lg:hidden" />
-          <h2 id={`${region.id}-title`} aria-label={region.name} className="flex items-center gap-4 font-serif text-[clamp(56px,6.4vw,104px)] leading-[0.92] tracking-[-0.035em]">
+          <h2 id={`${region.id}-title`} aria-label={region.name} className="flex items-center gap-4 font-serif text-[clamp(56px,6vw,100px)] leading-[0.92] tracking-[-0.035em]">
             <span className="size-[0.16em] shrink-0 rounded-full" style={{ background: region.color }} aria-hidden="true" />
             <span aria-hidden="true" className="inline-flex overflow-hidden pb-[0.08em]">
               {[...region.name].map((c, i) => (
@@ -108,25 +118,21 @@ function Chapter({ index, region, subtitle, body, children }) {
               ))}
             </span>
           </h2>
-          <p data-in className="mt-4 max-w-[26ch] font-serif text-[clamp(24px,2vw,30px)] leading-[1.2]">
+          <p data-in className="mt-5 max-w-[26ch] font-serif text-[clamp(24px,2vw,32px)] leading-[1.2]">
             {subtitle}
           </p>
-          <figure data-in className="mt-8">
-            <div data-photo className="aspect-[16/9] overflow-hidden bg-[#eceae6]">
-              {/* eslint-disable-next-line @next/next/no-img-element -- pre-built static WebP */}
-              <img src={optSrc(p.src, 960)} srcSet={optSrcSet(p.src)} sizes="(min-width: 1024px) 40vw, 100vw" alt={p.alt} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-            </div>
-            <figcaption className="mt-3 text-[15px] text-ink/70">{p.caption}</figcaption>
-          </figure>
-          <p data-in className="mt-6 max-w-[46ch] text-[17px] leading-[1.65]">
+          <p data-in className="mt-7 max-w-[44ch] text-[18px] leading-[1.65]">
             {body}
           </p>
+          <figure data-in className="mt-8 lg:hidden">
+            <div data-photo className="aspect-[4/3] overflow-hidden bg-[#eceae6]">{photo}</div>
+            <figcaption className="mt-3 text-[15px] text-ink/70">{p.caption}</figcaption>
+          </figure>
           <div data-in>
             <Explore name={region.name}>{children}</Explore>
           </div>
           <p className="mt-8 max-w-[30ch] text-[15px] lg:hidden">{FORMS[region.id]}</p>
         </div>
-        <p className={`hidden max-w-[34ch] self-start pt-[10svh] text-[15px] lg:col-span-5 lg:row-start-1 lg:block ${formSide}`}>{FORMS[region.id]}</p>
       </div>
     </section>
   );
