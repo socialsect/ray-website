@@ -170,7 +170,7 @@ export default async function HomePage() {
             {/* The opening holds for a screen of scrolling while the reader goes into the mind. */}
             <div className="sticky top-0 h-svh min-h-[620px] overflow-hidden">
             <div className="absolute inset-x-0 top-[22%] md:top-1/2 md:-translate-y-1/2">
-              <h1 id="hero-title" data-monument aria-label="Welcome to Ray’s mind" className="mind-monument origin-center px-3 text-center font-serif text-[16.2vw] uppercase leading-[0.86] tracking-[-0.045em]">
+              <h1 id="hero-title" data-monument aria-label="Welcome to Ray’s mind" className="mind-monument origin-center px-3 text-center font-serif text-[21.2vw] uppercase leading-[0.86] tracking-[-0.045em]">
                 <span className="inline-flex overflow-hidden pb-[0.04em]">
                   {[...MONUMENT].map((c, i) => (
                     <span key={i} className="mind-letter" style={{ "--i": i }}>
@@ -306,47 +306,33 @@ export default async function HomePage() {
           </section>
 
           {/* Ways to reach Ray, set as display rows. */}
-          <section id="connect" aria-labelledby="connect-title" className="relative grid bg-[#fbe4ee] pb-20 pt-24 md:pb-24 md:pt-32 lg:grid-cols-12 lg:gap-8">
+          <section id="connect" aria-labelledby="connect-title" className="relative grid bg-[#ff7a1f] pb-20 pt-24 md:pb-24 md:pt-32 lg:grid-cols-12 lg:gap-8">
             <div data-reveal-group className="px-5 md:px-8 lg:col-span-4 lg:pr-0">
-              <h2 id="connect-title" data-in className="font-serif text-[clamp(36px,3.4vw,52px)] leading-[1.02] tracking-[-0.02em]">
+              <h2 id="connect-title" data-in className="font-serif text-[clamp(36px,3.4vw,52px)] leading-[1.05] tracking-[-0.01em]">
                 {sentence(copy.contactHeadline.text)}
               </h2>
               <p data-in className="mt-5 max-w-[40ch] text-[17px] leading-[1.6]">{copy.contactBody.text}</p>
             </div>
-            <div className="order-3 px-5 md:px-8 lg:order-none lg:col-span-4 lg:row-start-2 lg:self-end lg:pr-0">
-              <dl className="mt-12 grid gap-4 text-[15px] lg:mt-0">
-                <div>
-                  <dt>Email</dt>
-                  <dd className="font-semibold">{EMAIL}</dd>
-                </div>
-                <div>
-                  <dt>The podcast</dt>
-                  <dd className="font-semibold">{show.links.map((l) => l.label).join(", ")}</dd>
-                </div>
-              </dl>
-            </div>
-            <ul data-reveal-group className="order-2 mt-12 font-serif text-[clamp(34px,5vw,80px)] leading-none tracking-[-0.03em] lg:order-none lg:col-span-8 lg:col-start-5 lg:row-span-2 lg:row-start-1 lg:mt-0">
+            <ul data-reveal-group className="mt-12 lg:col-span-8 lg:col-start-5 lg:mt-0">
               {[
-                { label: "Write to Ray", href: mail },
-                { label: "Socialsect", href: venture.verifiedLinks[0].href, ext: true },
-                { label: show.title, href: show.links[0].href, ext: true },
-                { label: "India, US, UK, UAE" },
+                { label: "Write to Ray", note: `Email ${EMAIL}`, href: mail },
+                { label: "Socialsect", note: `The company Ray founded. ${venture.sector}.`, href: venture.verifiedLinks[0].href, ext: true },
+                { label: show.title, note: `Ray's podcast, on ${show.links.map((l) => l.label).join(" and ")}.`, href: show.links[0].href, ext: true },
               ].map((row, i) => (
-                <li key={row.label} data-in className={i % 2 ? "bg-[#f7d5e3]" : ""}>
-                  {row.href ? (
-                    <a
-                      href={row.href}
-                      {...(row.ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                      className="group flex items-center justify-between gap-6 px-5 py-[0.42em] transition-colors duration-300 hover:bg-[#050f16] hover:text-[#fbe4ee] md:px-8"
-                    >
-                      {row.label}
-                      <svg viewBox="0 0 24 24" aria-hidden="true" className="size-[0.45em] shrink-0 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1">
-                        <path d="M6 18 18 6M8 6h10v10" fill="none" stroke="currentColor" strokeWidth="2" />
-                      </svg>
-                    </a>
-                  ) : (
-                    <p className="px-5 py-[0.42em] md:px-8">{row.label}</p>
-                  )}
+                <li key={row.label} data-in className={i % 2 ? "bg-[#ff8a38]" : ""}>
+                  <a
+                    href={row.href}
+                    {...(row.ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                    className="group flex items-center justify-between gap-6 px-5 py-7 transition-colors duration-300 hover:bg-[#050f16] hover:text-[#ff7a1f] md:px-8 md:py-9"
+                  >
+                    <span>
+                      <span className="block font-serif text-[clamp(34px,4.4vw,72px)] leading-none tracking-[-0.01em]">{row.label}</span>
+                      <span className="mt-3 block text-[16px] md:text-[17px]">{row.note}</span>
+                    </span>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-[clamp(22px,2.4vw,36px)] shrink-0 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1">
+                      <path d="M6 18 18 6M8 6h10v10" fill="none" stroke="currentColor" strokeWidth="2" />
+                    </svg>
+                  </a>
                 </li>
               ))}
             </ul>
@@ -354,16 +340,16 @@ export default async function HomePage() {
         </main>
 
         {/* The close: an invitation, the ways in, and the name set across the whole page. */}
-        <footer className="relative overflow-hidden bg-[#f6f3ec]">
+        <footer className="relative overflow-hidden bg-[#050f16] text-[#f6f3ec]">
           <div data-reveal-group className="grid gap-14 px-5 pt-24 md:px-8 md:pt-32 lg:grid-cols-12 lg:gap-8">
             <div data-in className="lg:col-span-6">
-              <p className="font-serif text-[clamp(48px,5.6vw,96px)] leading-[0.95] tracking-[-0.03em]">
+              <p className="font-serif text-[clamp(48px,5.6vw,96px)] leading-[1] tracking-[-0.01em]">
                 Let&apos;s build
                 <br />
                 what&apos;s next.
               </p>
               <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
-                <a href={mail} className="mind-button">
+                <a href={mail} className="mind-button mind-button-inverse">
                   Write to Ray
                 </a>
                 <a href={mail} className="mind-link text-[17px]">
@@ -373,7 +359,7 @@ export default async function HomePage() {
             </div>
             <nav data-in aria-label="Footer" className="grid grid-cols-2 gap-x-8 gap-y-10 text-[17px] sm:grid-cols-3 lg:col-span-6 lg:pt-4">
               <div>
-                <p className="text-[15px] text-ink/60">Explore the mind</p>
+                <p className="text-[15px] text-[#f6f3ec]/60">Explore the mind</p>
                 <ul className="mt-4 space-y-2.5">
                   {REGIONS.map((r) => (
                     <li key={r.id}>
@@ -386,7 +372,7 @@ export default async function HomePage() {
                 </ul>
               </div>
               <div>
-                <p className="text-[15px] text-ink/60">Ray&apos;s work</p>
+                <p className="text-[15px] text-[#f6f3ec]/60">Ray&apos;s work</p>
                 <ul className="mt-4 space-y-2.5">
                   <li>
                     <a href={venture.verifiedLinks[0].href} target="_blank" rel="noopener noreferrer" className="mind-link">
@@ -403,7 +389,7 @@ export default async function HomePage() {
                 </ul>
               </div>
               <div>
-                <p className="text-[15px] text-ink/60">More of this site</p>
+                <p className="text-[15px] text-[#f6f3ec]/60">More of this site</p>
                 <ul className="mt-4 space-y-2.5">
                   <li>
                     <a href="#top" className="mind-link">Back to the beginning</a>
@@ -438,7 +424,7 @@ export default async function HomePage() {
             </details>
           </div>
           {/* The name, whole, across the page: it rises letter by letter as the page ends. */}
-          <p aria-hidden="true" data-footer-name className="mind-monument mt-10 flex justify-between overflow-hidden px-3 pb-[0.06em] font-serif text-[13.4vw] uppercase leading-[0.86] text-[#ff7a1f]">
+          <p aria-hidden="true" data-footer-name className="mind-monument mt-10 flex justify-between overflow-hidden px-3 pb-[0.06em] font-serif text-[17.6vw] uppercase leading-[0.86] text-[#ff7a1f]">
             {[..."Raymindset"].map((c, i) => (
               <span key={i} data-char className="inline-block">
                 {c}

@@ -15,7 +15,7 @@
 
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-bodoni), "Times New Roman", serif;
+  --font-serif: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -260,12 +260,19 @@ footer .mind-link:focus-visible {
   }
 }
 
+/* Headings: Archivo, semibold and tightly set, so every word reads clearly at every size. */
+.font-serif {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
 /* The name rises letter by letter while the mind gathers behind it. */
 .mind-monument {
   will-change: transform, opacity;
-  /* A sturdier optical size, so the hairlines hold at monument scale. */
-  font-weight: 600;
-  font-variation-settings: "opsz" 11;
+  /* The name in Archivo's heavy condensed cut: solid at any size. */
+  font-weight: 800;
+  font-stretch: 78%;
+  letter-spacing: -0.02em;
 }
 .mind-letter {
   display: inline-block;
