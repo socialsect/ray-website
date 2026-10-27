@@ -37,6 +37,8 @@ export default function Mind({ regions, children }) {
   const litRef = useRef(-1);
   const idRef = useRef("hero");
   const groundNow = useRef("");
+  const lenisRef = useRef(null);
+  const cursorRef = useRef(null);
   const [mode, setMode] = useState("pending");
   const [current, setCurrent] = useState("hero");
   const mapRef = useRef(0);
@@ -157,10 +159,32 @@ export default function Mind({ regions, children }) {
     let ctx;
     let cancelled = false;
     let removeScroll = () => {};
-    Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(([{ gsap }, { ScrollTrigger }]) => {
+    let lenis = null;
+    let lenisTick = null;
+    let gsapRef = null;
+    Promise.all([import("gsap"), import("gsap/ScrollTrigger"), import("lenis")]).then(([{ gsap }, { ScrollTrigger }, { default: Lenis }]) => {
       if (cancelled) return;
+      gsapRef = gsap;
       gsap.registerPlugin(ScrollTrigger);
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      // Smooth, weighted scrolling. The page keeps its native scroll position,
+      // so sticky sections, anchors and ScrollTrigger all behave as before.
+      if (!reduced) {
+        lenis = new Lenis({ duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smoothWheel: true, anchors: { offset: 0 } });
+        lenisRef.current = lenis;
+        const root = document.documentElement;
+        let skew = 0;
+        lenis.on("scroll", ({ velocity }) => {
+          ScrollTrigger.update();
+          // Fast scrolling stirs the thoughts and leans the photographs.
+          mindRef.current?.setStir(Math.min(Math.abs(velocity) / 40, 1));
+          skew = Math.max(-5, Math.min(5, velocity * 0.12));
+          root.style.setProperty("--mind-skew", `${skew.toFixed(2)}deg`);
+        });
+        lenisTick = (time) => lenis.raf(time * 1000);
+        gsap.ticker.add(lenisTick);
+        gsap.ticker.lagSmoothing(0);
+      }
       const ids = ["hero", "intro", "map", ...regions.map((r) => r.id), "close"];
       const sections = ids.map((id) => document.querySelector(`[data-mind="${id}"]`));
       const monument = document.querySelector("[data-monument]");
@@ -341,8 +365,49 @@ export default function Mind({ regions, children }) {
       cancelled = true;
       removeScroll();
       ctx?.revert();
+      if (lenisTick && gsapRef) gsapRef.ticker.remove(lenisTick);
+      lenis?.destroy();
+      lenisRef.current = null;
     };
   }, [regions]);
+
+  // A cursor that follows with weight, inverts what lies beneath it and grows
+  // over anything clickable; buttons lean toward it. Fine pointers only.
+  useEffect(() => {
+    if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const dot = cursorRef.current;
+    if (!dot) return;
+    let x = -100, y = -100, cx = -100, cy = -100, s = 1, ts = 1, raf = 0;
+    const onMove = (e) => {
+      x = e.clientX;
+      y = e.clientY;
+      const hit = e.target.closest?.("a, button, summary");
+      ts = hit ? 3.2 : 1;
+      document.querySelectorAll(".mind-button").forEach((b) => {
+        const r = b.getBoundingClientRect();
+        const dx = x - (r.left + r.width / 2);
+        const dy = y - (r.top + r.height / 2);
+        const near = Math.abs(dx) < r.width && Math.abs(dy) < r.height * 1.6;
+        b.style.translate = near ? `${dx * 0.18}px ${dy * 0.3}px` : "0 0";
+      });
+    };
+    const loop = () => {
+      raf = requestAnimationFrame(loop);
+      cx += (x - cx) * 0.18;
+      cy += (y - cy) * 0.18;
+      s += (ts - s) * 0.15;
+      dot.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%) scale(${s})`;
+    };
+    document.documentElement.classList.add("mind-cursor-on");
+    window.addEventListener("pointermove", onMove, { passive: true });
+    loop();
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("pointermove", onMove);
+      document.documentElement.classList.remove("mind-cursor-on");
+    };
+  }, []);
 
   // The live thing: the cursor (or a finger) parts the thoughts around it.
   useEffect(() => {
@@ -363,7 +428,10 @@ export default function Mind({ regions, children }) {
 
   const goTo = (id) => {
     track(EVENTS.heroEnter, { via: "brain", chapter: id });
-    document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (lenisRef.current) lenisRef.current.scrollTo(el, { duration: 1.6 });
+    else el.scrollIntoView();
   };
   const hover = (i) => {
     userHover.current = i;
@@ -407,6 +475,7 @@ export default function Mind({ regions, children }) {
       )}
 
       <div className="relative z-10">{children}</div>
+      <div ref={cursorRef} aria-hidden="true" className="mind-cursor" />
     </div>
   );
 }

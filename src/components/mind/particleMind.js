@@ -200,6 +200,7 @@ const VERT = /* glsl */ `
   uniform float uFromBrain;
   uniform float uToBrain;
   uniform float uHover;
+  uniform float uStir;
   uniform vec3 uInk;
   uniform vec3 uFormColor;
   uniform float uFormTint;
@@ -222,7 +223,7 @@ const VERT = /* glsl */ `
     float burst = sin(m * 3.14159);
     p += curl(p * 1.3 + aSeed.yzw * 4.0) * burst * (0.18 + aSeed.y * 0.25);
     // Breathing.
-    p += curl(p * 2.0 + aSeed.xyz * 9.0) * 0.006;
+    p += curl(p * 2.0 + aSeed.xyz * 9.0) * (0.006 + uStir * 0.09);
 
     // The opening: dust from far away gathers into the mind.
     float k = clamp((uIntro - aSeed.w * 0.45) / 0.55, 0.0, 1.0);
@@ -326,6 +327,7 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     uFromBrain: { value: 1 },
     uToBrain: { value: 1 },
     uHover: { value: -1 },
+    uStir: { value: 0 },
     uInk: { value: new THREE.Color("#ffffff") },
     uFormColor: { value: new THREE.Color("#ffffff") },
     uFormTint: { value: 0 },
@@ -425,6 +427,7 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
   const parallax = new THREE.Vector2();
   let pushTarget = 0;
   let paused = false;
+  let stirTarget = 0;
   const raycaster = new THREE.Raycaster();
 
   const resize = () => {
@@ -459,6 +462,9 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     uniforms.uFormTint.value += (colorTarget.tint - uniforms.uFormTint.value) * e;
     uniforms.uAlpha.value += (colorTarget.alpha - uniforms.uAlpha.value) * e;
     uniforms.uPush.value += (pushTarget - uniforms.uPush.value) * (1 - Math.exp(-dt * 6));
+    // The stir rises with the scroll and settles once it stops.
+    stirTarget *= Math.exp(-dt * 2.5);
+    uniforms.uStir.value += (stirTarget - uniforms.uStir.value) * (1 - Math.exp(-dt * 5));
     parallax.lerp(pointer.x < 5 ? pointer : new THREE.Vector2(), 1 - Math.exp(-dt * 2));
 
     // The form turns slowly; the opening adds one long turn as it gathers.
@@ -521,6 +527,9 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     },
     setMap(v) {
       uniforms.uMap.value = v;
+    },
+    setStir(v) {
+      stirTarget = v;
     },
     setHover(i) {
       uniforms.uHover.value = i;
