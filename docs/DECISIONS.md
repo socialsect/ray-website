@@ -37,3 +37,11 @@ Later on 2026-10-26, after client review
 24. **The live thing.** The cursor or a finger parts the particles around it. On the map, hovering a region lights its particles.
 25. **House rules applied.** The chapter numbers and the number rail are removed, along with the thin outlined pills and the coloured left borders. Region labels are set in ink with a coloured dot, so they meet text contrast.
 26. **Photo stage retired from the homepage.** Each chapter now shows its credited photograph as a real image beside the words. `photoStage.js` and `brainScene.js` stay in the repo: `/atlas` uses the stage, and the brain scene is kept for reference.
+27. **Real 3D objects for every chapter.** The client asked for real models instead of particle shapes. Five chapter objects are Poly Haven models, CC0, credited in the footer, with textures re-encoded as WebP (about 3.5 MB together):
+    - Journey: a pocket watch
+    - Ventures: a laptop
+    - Exploration: a compass
+    - Expression: a suitcase, for *A Suitcase of Memories*
+    - Ideas: a lightbulb
+
+    No open boxing model exists, so the Discipline ring is built in code with physical materials. The brain (Brain AS) also renders solid. In each section the particles gather on the object's real surface, then the solid object fades in. Only the map keeps the brain as particles, so its regions can light up.

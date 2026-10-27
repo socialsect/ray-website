@@ -2,6 +2,120 @@ import * as THREE from "three";
 import { MeshSurfaceSampler } from "three/examples/jsm/math/MeshSurfaceSampler.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+
+// The real objects each chapter becomes (Poly Haven, CC0), and the ring built here.
+const MODELS = {
+  journey: "/assets/models/vintage_pocket_watch/vintage_pocket_watch.gltf",
+  ventures: "/assets/models/classic_laptop/classic_laptop.gltf",
+  exploration: "/assets/models/seadogs_compass/seadogs_compass.gltf",
+  expression: "/assets/models/vintage_suitcase/vintage_suitcase.gltf",
+  ideas: "/assets/models/lightbulb_01/lightbulb_01.gltf",
+};
+
+// Small corrections per model, applied before each is sized.
+const TWEAKS = {
+  // The file holds two suitcases side by side; keep the first.
+  expression: (scene) => scene.children.filter((c) => /_02_/.test(c.name)).forEach((c) => c.removeFromParent()),
+  // Tip the compass so its face looks at the reader.
+  exploration: (scene) => {
+    scene.rotation.x = 1.15;
+  },
+  // Clear glass with a warm glow: an idea, switched on.
+  ideas: (scene) =>
+    scene.traverse((m) => {
+      if (!m.isMesh) return;
+      for (const mat of [].concat(m.material)) {
+        if (!(mat.transmission > 0)) continue;
+        mat.transmission = 0;
+        mat.transparent = true;
+        mat.opacity = 0.42;
+        mat.roughness = 0.04;
+        mat.color.set("#fffaf0");
+        mat.emissive.set("#ffc46b");
+        mat.emissiveIntensity = 0.35;
+        mat.depthWrite = false;
+      }
+    }),
+};
+
+// A boxing ring: padded corner posts, three red ropes a side, a canvas floor.
+function buildRing() {
+  const ring = new THREE.Group();
+  const canvasMat = new THREE.MeshStandardMaterial({ color: "#e9e4da", roughness: 0.9 });
+  const apron = new THREE.MeshStandardMaterial({ color: "#1d3f8f", roughness: 0.7 });
+  const post = new THREE.MeshStandardMaterial({ color: "#c9ccd2", metalness: 0.85, roughness: 0.3 });
+  const pad = new THREE.MeshStandardMaterial({ color: "#b3121f", roughness: 0.55 });
+  const rope = new THREE.MeshStandardMaterial({ color: "#d1202f", roughness: 0.45 });
+  const S = 1.0;
+  const floor = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.06, 2.3), canvasMat);
+  floor.position.y = -0.62;
+  const base = new THREE.Mesh(new THREE.BoxGeometry(2.36, 0.3, 2.36), apron);
+  base.position.y = -0.8;
+  ring.add(floor, base);
+  const corners = [[-S, -S], [S, -S], [S, S], [-S, S]];
+  for (const [x, z] of corners) {
+    const p = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 1.1, 20), post);
+    p.position.set(x, -0.05, z);
+    const cushion = new THREE.Mesh(new THREE.CylinderGeometry(0.075, 0.075, 0.72, 20), pad);
+    cushion.position.set(x, 0.0, z);
+    ring.add(p, cushion);
+  }
+  for (let r = 0; r < 3; r++) {
+    const y = -0.28 + r * 0.26;
+    for (let k = 0; k < 4; k++) {
+      const [x1, z1] = corners[k];
+      const [x2, z2] = corners[(k + 1) % 4];
+      const curve = new THREE.QuadraticBezierCurve3(new THREE.Vector3(x1, y, z1), new THREE.Vector3((x1 + x2) / 2, y - 0.035, (z1 + z2) / 2), new THREE.Vector3(x2, y, z2));
+      ring.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 24, 0.022, 10), rope));
+    }
+  }
+  return ring;
+}
+
+// Centre an object and scale it to about two units across.
+function normalise(obj, size = 2.1) {
+  obj.updateMatrixWorld(true);
+  const box = new THREE.Box3().setFromObject(obj);
+  const dim = box.getSize(new THREE.Vector3());
+  const k = size / Math.max(dim.x, dim.y, dim.z);
+  const holder = new THREE.Group();
+  obj.position.sub(box.getCenter(new THREE.Vector3()));
+  holder.add(obj);
+  holder.scale.setScalar(k);
+  holder.updateMatrixWorld(true);
+  return holder;
+}
+
+// Points spread over an object's surfaces, weighted by area, in its holder's space.
+function sampleSurface(holder, N) {
+  const parts = [];
+  holder.updateMatrixWorld(true);
+  const inv = new THREE.Matrix4().copy(holder.matrixWorld).invert();
+  holder.traverse((m) => {
+    if (!m.isMesh) return;
+    const g = m.geometry.clone();
+    g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inv, m.matrixWorld));
+    // Undo the holder's scale too, so the points sit where the object draws.
+    g.scale(holder.scale.x, holder.scale.y, holder.scale.z);
+    const sampler = new MeshSurfaceSampler(new THREE.Mesh(g)).build();
+    const area = sampler.distribution[sampler.distribution.length - 1];
+    parts.push({ sampler, area, g });
+  });
+  const total = parts.reduce((a, p) => a + p.area, 0) || 1;
+  const out = new Float32Array(N * 3);
+  const v = new THREE.Vector3();
+  let i = 0;
+  parts.forEach((p, k) => {
+    const n = k === parts.length - 1 ? N - i : Math.round((p.area / total) * N);
+    for (let j = 0; j < n && i < N; j++, i++) {
+      p.sampler.sample(v);
+      out.set([v.x, v.y, v.z], i * 3);
+    }
+    p.g.dispose();
+  });
+  return out;
+}
 
 // Ray's mind as one cloud of particles. It forms the anatomical brain (Brain
 // AS, Agnieszka Starostecka, CC BY 4.0) and, as the page scrolls, re-forms
@@ -397,6 +511,7 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
   // tones under soft studio light. It forms out of the particles on arrival.
   const pmrem = new THREE.PMREMGenerator(renderer);
   const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environment = envTex;
   const solidMat = new THREE.MeshPhysicalMaterial({
     color: new THREE.Color("#e8c4bb"),
     roughness: 0.48,
@@ -408,10 +523,20 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     sheenColor: new THREE.Color("#ffd7cc"),
     envMap: envTex,
     envMapIntensity: 0.9,
-    transparent: true,
-    opacity: 0,
   });
-  let solid = null;
+  // Every real object, by form: its holder, its materials and how far it is faded in.
+  const solids = {};
+  let disposed = false;
+  const addSolid = (id, holder) => {
+    const mats = [];
+    holder.traverse((m) => {
+      if (!m.isMesh) return;
+      for (const mat of [].concat(m.material)) if (!mats.includes(mat)) mats.push(mat);
+    });
+    holder.visible = false;
+    group.add(holder);
+    solids[id] = { holder, mats: mats.map((mat) => ({ mat, transparent: mat.transparent, opacity: mat.opacity })), fade: 0 };
+  };
   const key = new THREE.DirectionalLight("#fff4ea", 2.4);
   key.position.set(-3, 4, 5);
   const rim = new THREE.DirectionalLight("#ffe2c8", 1.6);
@@ -441,16 +566,42 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
           }
         });
       }
-      solid = new THREE.Mesh(g, solidMat);
-      solid.position.copy(c).multiplyScalar(-s);
-      solid.scale.setScalar(s);
-      solid.visible = false;
-      group.add(solid);
+      const brainMesh = new THREE.Mesh(g, solidMat);
+      brainMesh.position.copy(c).multiplyScalar(-s);
+      brainMesh.scale.setScalar(s);
+      const brainHolder = new THREE.Group();
+      brainHolder.add(brainMesh);
+      addSolid("brain", brainHolder);
       forms.brain.array.set(out);
       forms.brain.needsUpdate = true;
       onReady?.();
+      return loadObjects();
     })
     .catch((e) => console.warn("Brain model unavailable", e));
+
+  // The chapter objects load one by one after the brain; each one's particles
+  // are re-drawn from its real surfaces so the morph lands on the object.
+  async function loadObjects() {
+    const ringHolder = normalise(buildRing(), 2.3);
+    forms.discipline.array.set(sampleSurface(ringHolder, N));
+    forms.discipline.needsUpdate = true;
+    addSolid("discipline", ringHolder);
+    const loader = new GLTFLoader();
+    for (const [id, url] of Object.entries(MODELS)) {
+      if (disposed) return;
+      try {
+        const gltf = await loader.loadAsync(url);
+        if (disposed) return;
+        TWEAKS[id]?.(gltf.scene);
+        const holder = normalise(gltf.scene);
+        forms[id].array.set(sampleSurface(holder, N));
+        forms[id].needsUpdate = true;
+        addSolid(id, holder);
+      } catch (e) {
+        console.warn("Model unavailable", id, e);
+      }
+    }
+  }
 
   // State the page drives.
   let from = "brain";
@@ -498,22 +649,33 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     uniforms.uFormColor.value.lerp(colorTarget.form, e);
     uniforms.uFormTint.value += (colorTarget.tint - uniforms.uFormTint.value) * e;
     uniforms.uAlpha.value += (colorTarget.alpha - uniforms.uAlpha.value) * e;
-    // The solid brain appears once the particles have gathered, and hands back to them on scroll.
-    if (solid) {
-      const want = solidTarget * Math.min(Math.max((uniforms.uIntro.value - 0.8) / 0.2, 0), 1);
-      // Real elapsed time, so the fade completes even on slow frames.
+    // The real object of the current form appears once its particles have
+    // gathered, and hands back to them when the page moves on.
+    {
+      const settled = Math.min(Math.max((uniforms.uMix.value - 0.85) / 0.15, 0), 1);
+      const gathered = Math.min(Math.max((uniforms.uIntro.value - 0.8) / 0.2, 0), 1);
+      // Real elapsed time, so fades complete even on slow frames.
       const step = 1 - Math.exp(-Math.min(realDt, 0.5) * 3);
-      solidMat.opacity += (want - solidMat.opacity) * step;
-      if (Math.abs(want - solidMat.opacity) < 0.02) solidMat.opacity = want;
-      solid.visible = solidMat.opacity > 0.01;
-      // Fully in, it is drawn as an opaque object: no see-through folds.
-      const opaque = solidMat.opacity >= 0.999;
-      if (solidMat.transparent === opaque) {
-        solidMat.transparent = !opaque;
-        solidMat.needsUpdate = true;
+      let shown = 0;
+      for (const [id, entry] of Object.entries(solids)) {
+        const want = id === to ? solidTarget * (from === to ? 1 : settled) * gathered : 0;
+        entry.fade += (want - entry.fade) * step;
+        if (Math.abs(want - entry.fade) < 0.02) entry.fade = want;
+        entry.holder.visible = entry.fade > 0.01;
+        const opaque = entry.fade >= 0.999;
+        for (const m of entry.mats) {
+          // Fully in, each material draws as it was authored: no see-through surfaces.
+          const transparent = opaque ? m.transparent : true;
+          if (m.mat.transparent !== transparent) {
+            m.mat.transparent = transparent;
+            m.mat.needsUpdate = true;
+          }
+          m.mat.opacity = m.opacity * entry.fade;
+          m.mat.depthWrite = opaque ? !m.transparent || m.mat.depthWrite : false;
+        }
+        shown = Math.max(shown, entry.fade);
       }
-      solidMat.depthWrite = opaque;
-      uniforms.uHide.value = solidMat.opacity * 0.94;
+      uniforms.uHide.value = shown * 0.94;
     }
     uniforms.uPush.value += (pushTarget - uniforms.uPush.value) * (1 - Math.exp(-dt * 6));
     // The stir rises with the scroll and settles once it stops.
@@ -608,8 +770,13 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       geo.dispose();
-      solid?.geometry.dispose();
-      solidMat.dispose();
+      disposed = true;
+      for (const entry of Object.values(solids))
+        entry.holder.traverse((m) => {
+          if (!m.isMesh) return;
+          m.geometry.dispose();
+          for (const mat of [].concat(m.material)) mat.dispose();
+        });
       envTex.dispose();
       pmrem.dispose();
       fieldGeo.dispose();

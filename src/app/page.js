@@ -26,6 +26,11 @@ const PHOTOS = {
 
 const CREDITS = [
   { title: "Brain AS (3D model of the human brain)", creator: "Agnieszka Starostecka", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/", page: "https://commons.wikimedia.org/wiki/File:Brain_AS.stl" },
+  { title: "Vintage Pocket Watch (3D model)", creator: "Tal Swicegood, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/vintage_pocket_watch" },
+  { title: "Classic Laptop (3D model)", creator: "Arrangemonk, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/classic_laptop" },
+  { title: "Seadog’s Compass (3D model)", creator: "Benny Weimer, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/seadogs_compass" },
+  { title: "Vintage Suitcase (3D model)", creator: "Maximilian Schuster, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/vintage_suitcase" },
+  { title: "Lightbulb 01 (3D model)", creator: "Josh Dean, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/lightbulb_01" },
   { title: "Sunrise on the Jebel Jais Mountain", creator: "Clintonrebeiro", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", page: "https://commons.wikimedia.org/wiki/File:Sunrise_on_the_Jebel_Jais_Mountain_on_a_Chilly_Winter_Morning.jpg" },
   { title: "Highlight Towers Munich", creator: "Martin Falbisoner", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", page: "https://commons.wikimedia.org/wiki/File:Highlight_Towers_Munich,_February_2017_-01.jpg" },
   { title: "Penn State Boxing Coach Demonstrates on Heavy Punching Bag", creator: "US Army Signal Corps (Hennepin County Library)", license: "Public domain", licenseUrl: "https://creativecommons.org/publicdomain/mark/1.0/", page: "https://commons.wikimedia.org/wiki/File:Penn_State_Boxing_Coach_Demonstrates_on_Heavy_Punching_Bag_-_DPLA_-_2ed616aeb7f078509e1eec4ac4f6167e.jpg" },
@@ -40,12 +45,12 @@ const sentence = (s) => s.toLowerCase().replace(/^./, (c) => c.toUpperCase());
 
 // What each chapter's 3D form shows, said in words beside it.
 const FORMS = {
-  journey: "A road that keeps climbing into the distance.",
-  ventures: "A tower, its top floors still being built.",
+  journey: "A vintage pocket watch, for the years that made the path.",
+  ventures: "A classic laptop: where a digital company begins.",
   discipline: "The ring: four posts, three ropes, one canvas.",
-  exploration: "A globe, with India, the US, the UK and the UAE joined by arcs.",
-  expression: "An open book, its pages lifting.",
-  ideas: "A spiral of thoughts, turning around a bright core.",
+  exploration: "A ship’s compass, for finding the way somewhere new.",
+  expression: "A vintage suitcase, for A Suitcase of Memories.",
+  ideas: "A lightbulb: the oldest sign of a new idea.",
 };
 
 // A heading whose words rise into place, each from behind its own edge.
@@ -121,7 +126,7 @@ function Chapter({ index, region, subtitle, body, children }) {
           </div>
           <p className="mt-8 max-w-[30ch] text-[15px] lg:hidden">{FORMS[region.id]}</p>
         </div>
-        <p className={`hidden max-w-[34ch] self-end pb-[9svh] text-[15px] lg:col-span-5 lg:row-start-1 lg:block ${formSide}`}>{FORMS[region.id]}</p>
+        <p className={`hidden max-w-[34ch] self-start pt-[10svh] text-[15px] lg:col-span-5 lg:row-start-1 lg:block ${formSide}`}>{FORMS[region.id]}</p>
       </div>
     </section>
   );
@@ -407,7 +412,7 @@ export default async function HomePage() {
           <div className="mt-24 flex flex-wrap items-start justify-between gap-x-8 gap-y-3 px-5 text-[13px] md:px-8">
             <p>© 2026 {person.canonicalName}</p>
             <details className="max-w-[720px]">
-              <summary className="cursor-pointer">Credits for the brain model and photographs</summary>
+              <summary className="cursor-pointer">Credits for the 3D models and photographs</summary>
               <ul className="mt-3 space-y-1.5 pb-4 leading-[1.5]">
                 {CREDITS.map((c) => (
                   <li key={c.page}>

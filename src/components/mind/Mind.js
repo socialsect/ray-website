@@ -245,7 +245,9 @@ export default function Mind({ regions, children }) {
           if (!mind) return;
           mind.setScroll(window.scrollY / H);
           // The real brain holds the opening; it dissolves into thought as the dive begins.
-          mind.setSolid(id === "hero" ? 1 - smooth(0.04, 0.3, q) : 0);
+          // Every section shows its real object once its particles have gathered;
+          // only the map keeps the brain as particles, so its regions can light.
+          mind.setSolid(id === "hero" ? 1 - smooth(0.04, 0.3, q) : id === "map" ? 0 : 1);
           const prev = index > 0 ? formOf(ids[index - 1]) : formOf(id);
           mind.setForm(prev, formOf(id), index === 0 ? 1 : smooth(0, 0.4, p));
 
@@ -265,7 +267,7 @@ export default function Mind({ regions, children }) {
             view = wide ? { x: 1.05, y: 0.12, z: 6.2, scale: 0.82, rot: 0 } : { x: 0, y: 1.2, z: 8.4, scale: 0.58, rot: 0 };
           } else {
             const side = chapter % 2 === 0 ? 1 : -1;
-            view = wide ? { x: side * 0.95, y: 0, z: 6, scale: 0.92, rot: -side * 0.3 } : { x: 0, y: 0.62, z: phone ? 8.4 : 7.6, scale: 0.72, rot: 0 };
+            view = wide ? { x: side * 0.95, y: -0.05, z: 6, scale: 0.82, rot: -side * 0.3 } : { x: 0, y: 0.62, z: phone ? 8.4 : 7.6, scale: 0.72, rot: 0 };
           }
           mind.setView(view);
 
