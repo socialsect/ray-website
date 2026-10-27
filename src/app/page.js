@@ -92,9 +92,9 @@ function Chapter({ index, region, subtitle, body, children }) {
   return (
     <section id={region.id} data-mind={region.id} aria-labelledby={`${region.id}-title`} className="relative lg:h-[200svh]">
       {/* The spread holds still while it is read. */}
-      <div className="grid px-5 py-24 md:px-8 lg:sticky lg:top-0 lg:h-svh lg:grid-cols-12 lg:items-center lg:gap-x-10 lg:py-0">
+      <div className="mind-frame grid py-24 lg:sticky lg:top-0 lg:h-svh lg:grid-cols-12 lg:items-center lg:gap-x-10 lg:py-0">
         <figure className={`hidden lg:col-span-6 lg:row-start-1 lg:block ${stageCols}`}>
-          <div data-photo className="relative h-[72svh] overflow-hidden bg-[#eceae6]">
+          <div data-stage data-frame className="relative h-[70svh] overflow-hidden bg-[#eceae6]">
             {photo}
             {/* A light veil, so the object in front reads clearly. */}
             <div aria-hidden="true" className="absolute inset-0 bg-white/35" />
@@ -105,7 +105,7 @@ function Chapter({ index, region, subtitle, body, children }) {
           </figcaption>
         </figure>
 
-        <div data-reveal-group className={`lg:col-span-5 lg:row-start-1 ${textCols}`}>
+        <div data-reveal-group data-drift-col className={`lg:col-span-5 lg:row-start-1 ${textCols}`}>
           {/* On narrow screens the object fills this space before the words arrive. */}
           <div aria-hidden="true" className="h-[52svh] lg:hidden" />
           <h2 id={`${region.id}-title`} aria-label={region.name} className="flex items-center gap-4 font-serif text-[clamp(56px,6vw,100px)] leading-[0.92] tracking-[-0.035em]">
@@ -207,10 +207,10 @@ export default async function HomePage() {
 
           {/* Ray in his own words, beside his own photograph. */}
           <section id="intro" data-mind="intro" aria-labelledby="intro-title" className="relative flex min-h-[120svh] items-center">
-            <div data-reveal-group className="grid w-full px-5 py-32 md:px-8 lg:min-h-svh lg:grid-cols-12 lg:items-center lg:gap-8 lg:py-0">
+            <div data-reveal-group className="mind-frame grid py-32 lg:min-h-svh lg:grid-cols-12 lg:items-center lg:gap-8 lg:py-0">
               {/* Ray himself, in his own published photograph. */}
               <figure className="lg:col-span-6 lg:row-start-1">
-                <div data-photo className="aspect-[4/5] overflow-hidden bg-[#dbe6f7] lg:aspect-auto lg:h-[76svh]">
+                <div data-frame className="aspect-[4/5] overflow-hidden bg-[#dbe6f7] lg:aspect-auto lg:h-[76svh]">
                   {/* eslint-disable-next-line @next/next/no-img-element -- pre-built static WebP */}
                   <img
                     src={optSrc(person.portrait.src, 1600)}
@@ -245,7 +245,7 @@ export default async function HomePage() {
           </section>
 
           <section id="map" data-mind="map" aria-labelledby="map-title" className="relative min-h-[190svh]">
-            <div data-reveal-group className="sticky top-0 flex h-svh flex-col justify-between px-5 pb-8 pt-24 md:px-8 md:pt-28">
+            <div data-reveal-group className="mind-frame sticky top-0 flex h-svh flex-col justify-between pb-10 pt-24 md:pt-28">
               <h2 id="map-title" aria-label="Six regions. One mind." className="max-w-[16ch] font-serif text-[clamp(36px,3.4vw,52px)] leading-[1.02] tracking-[-0.02em]">
                 <Rise text="Six regions. One mind." />
               </h2>
@@ -322,7 +322,7 @@ export default async function HomePage() {
           </Chapter>
 
           <section data-mind="close" aria-labelledby="close-title" className="relative flex min-h-[130svh] items-end pb-[16svh]">
-            <div data-reveal-group className="w-full px-5 md:px-8">
+            <div data-reveal-group className="mind-frame">
               <h2 id="close-title" data-in className="font-serif text-[clamp(40px,6vw,96px)] leading-[0.92] tracking-[-0.035em]">
                 Different thoughts.
                 <br />
@@ -335,8 +335,8 @@ export default async function HomePage() {
           </section>
 
           {/* Ways to reach Ray, set as display rows. */}
-          <section id="connect" aria-labelledby="connect-title" className="relative grid bg-[#ff7a1f] pb-20 pt-24 md:pb-24 md:pt-32 lg:grid-cols-12 lg:gap-8">
-            <div data-reveal-group className="px-5 md:px-8 lg:col-span-4 lg:pr-0">
+          <section id="connect" aria-labelledby="connect-title" className="mind-pad relative grid bg-[#ff7a1f] pb-20 pt-24 md:pb-24 md:pt-32 lg:grid-cols-12 lg:gap-8">
+            <div data-reveal-group className="lg:col-span-4">
               <h2 id="connect-title" data-in className="font-serif text-[clamp(36px,3.4vw,52px)] leading-[1.05] tracking-[-0.01em]">
                 {sentence(copy.contactHeadline.text)}
               </h2>
@@ -370,7 +370,7 @@ export default async function HomePage() {
 
         {/* The close: an invitation, the ways in, and the name set across the whole page. */}
         <footer className="relative overflow-hidden bg-[#050f16] text-[#f6f3ec]">
-          <div data-reveal-group className="grid gap-14 px-5 pt-24 md:px-8 md:pt-32 lg:grid-cols-12 lg:gap-8">
+          <div data-reveal-group className="mind-frame grid gap-14 pt-24 md:pt-32 lg:grid-cols-12 lg:gap-8">
             <div data-in className="lg:col-span-6">
               <p className="font-serif text-[clamp(48px,5.6vw,96px)] leading-[1] tracking-[-0.01em]">
                 Let&apos;s build
@@ -433,7 +433,7 @@ export default async function HomePage() {
               </div>
             </nav>
           </div>
-          <div className="mt-24 flex flex-wrap items-start justify-between gap-x-8 gap-y-3 px-5 text-[13px] md:px-8">
+          <div className="mind-frame mt-24 flex flex-wrap items-start justify-between gap-x-8 gap-y-3 text-[13px]">
             <p>© 2026 {person.canonicalName}</p>
             <details className="max-w-[720px]">
               <summary className="cursor-pointer">Credits for the 3D models and photographs</summary>

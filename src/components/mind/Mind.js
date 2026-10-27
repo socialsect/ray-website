@@ -266,11 +266,25 @@ export default function Mind({ regions, children }) {
             const turn = -0.35 + 0.7 * smooth(0, 1, p);
             view = wide ? { x: 0, y: -0.04, z: 5.5, scale: 1, rot: turn } : { x: 0, y: 0.18, z: phone ? 9.4 : 7.2, scale: phone ? 0.62 : 0.86, rot: turn };
           } else if (id === "close") {
-            view = wide ? { x: 1.05, y: 0.12, z: 6.2, scale: 0.82, rot: 0 } : { x: 0, y: 1.2, z: 8.4, scale: 0.58, rot: 0 };
+            view = wide ? { x: 0.5 * Math.tan((16 * Math.PI) / 180) * 6 * (W / H), y: 0.12, z: 6, scale: 0.8, rot: 0 } : { x: 0, y: 1.2, z: 8.4, scale: 0.58, rot: 0 };
           } else {
             // The object stands in front of its chapter's photograph, on the stage side.
             const side = chapter % 2 === 0 ? -1 : 1;
-            view = wide ? { x: side * 1.32, y: 0.12, z: 6, scale: 0.74, rot: -side * 0.3 } : { x: 0, y: 0.62, z: phone ? 8.4 : 7.6, scale: 0.72, rot: 0 };
+            // On wide screens the object is placed from the real stage on the page:
+            // centred in its photograph and sized to it, at any width.
+            const stage = wide && sections[index]?.querySelector("[data-stage]");
+            const sr = stage && stage.getBoundingClientRect();
+            const half = Math.tan((16 * Math.PI) / 180) * 6;
+            view = sr && sr.height > 0
+              ? {
+                  x: ((sr.left + sr.width / 2) / W * 2 - 1) * half * (W / H),
+                  y: -((sr.top + sr.height / 2) / H * 2 - 1) * half,
+                  z: 6,
+                  scale: Math.min((0.62 * (sr.height / H) * 2 * half) / 2.1, (0.6 * (sr.width / W) * 2 * half * (W / H)) / 2.1),
+                  // The object turns as the reader scrolls through its chapter.
+                  rot: -side * 0.3 + (p - 0.35) * 2.4,
+                }
+              : wide ? { x: side * 1.32, y: 0.12, z: 6, scale: 0.74, rot: -side * 0.3 } : { x: 0, y: 0.62, z: phone ? 8.4 : 7.6, scale: 0.72, rot: 0 };
           }
           mind.setView(view);
 
@@ -364,6 +378,27 @@ export default function Mind({ regions, children }) {
           gsap.fromTo(el, { xPercent: 20 }, { xPercent: -45, ease: "none", scrollTrigger: { trigger: el.parentElement, start: "top bottom", end: "bottom top", scrub: true } });
         });
         // Each chapter's photograph opens from its lower edge.
+        // Framed photographs open out as their section scrolls in, and close as it leaves;
+        // the picture inside eases from close up to its full view.
+        gsap.utils.toArray("[data-frame]").forEach((el) => {
+          const sec = el.closest("section");
+          const tl = gsap.timeline({ scrollTrigger: { trigger: sec, start: "top bottom", end: "bottom top", scrub: 0.8 } });
+          tl.fromTo(el, { clipPath: "inset(20% 16% 20% 16%)" }, { clipPath: "inset(0% 0% 0% 0%)", ease: "power2.out", duration: 0.35 })
+            .to(el, { clipPath: "inset(0% 0% 0% 0%)", duration: 0.35 })
+            .to(el, { clipPath: "inset(12% 9% 12% 9%)", ease: "power2.in", duration: 0.3 });
+          const img = el.querySelector("img");
+          if (img) {
+            gsap.fromTo(img, { scale: 1.35 }, { scale: 1, ease: "power2.out", scrollTrigger: { trigger: sec, start: "top bottom", end: "top top", scrub: 0.8 } });
+          }
+        });
+        // The words rise into place as a chapter arrives and drift up as it leaves.
+        gsap.utils.toArray("[data-drift-col]").forEach((el) => {
+          const sec = el.closest("section");
+          gsap.timeline({ scrollTrigger: { trigger: sec, start: "top bottom", end: "bottom top", scrub: 0.8 } })
+            .fromTo(el, { y: 140 }, { y: 0, ease: "power2.out", duration: 0.35 })
+            .to(el, { y: 0, duration: 0.35 })
+            .to(el, { y: -90, opacity: 0.15, ease: "power2.in", duration: 0.3 });
+        });
         gsap.utils.toArray("[data-photo]").forEach((el) => {
           gsap.fromTo(
             el,
