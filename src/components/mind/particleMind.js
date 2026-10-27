@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { MeshSurfaceSampler } from "three/examples/jsm/math/MeshSurfaceSampler.js";
 import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.js";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
 // Ray's mind as one cloud of particles. It forms the anatomical brain (Brain
 // AS, Agnieszka Starostecka, CC BY 4.0) and, as the page scrolls, re-forms
@@ -205,6 +206,7 @@ const VERT = /* glsl */ `
   uniform vec3 uFormColor;
   uniform float uFormTint;
   uniform float uAlpha;
+  uniform float uHide;
   varying vec3 vColor;
   varying float vAlpha;
 
@@ -257,7 +259,7 @@ const VERT = /* glsl */ `
     float pulse = smoothstep(0.96, 1.0, sin(aSeed.z * 40.0 + uTime * (0.6 + aSeed.x)) * 0.5 + 0.5);
     col = mix(col, uFormColor, pulse * 0.8);
     vColor = col;
-    vAlpha = ((0.45 + aSeed.y * 0.55) * k + f * 0.5) * uAlpha;
+    vAlpha = ((0.45 + aSeed.y * 0.55) * k + f * 0.5) * uAlpha * (1.0 - uHide);
 
     vec4 mv = viewMatrix * vec4(w, 1.0);
     gl_Position = projectionMatrix * mv;
@@ -284,6 +286,8 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
   const dpr = Math.min(window.devicePixelRatio || 1, lite ? 1.5 : 1.75);
   renderer.setPixelRatio(dpr);
   renderer.setClearColor(0x000000, 0);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
@@ -332,6 +336,7 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     uFormColor: { value: new THREE.Color("#ffffff") },
     uFormTint: { value: 0 },
     uAlpha: { value: 1 },
+    uHide: { value: 0 },
   };
   const material = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms, transparent: true, depthWrite: false });
   const points = new THREE.Points(geo, material);
@@ -388,6 +393,33 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
   const anchors = regionDirs.map((d) => d.clone().multiplyScalar(0.9));
   const screen = regions.map(() => ({ x: 0, y: 0, facing: 1 }));
 
+  // The real brain: the anatomical model rendered solid, in natural tissue
+  // tones under soft studio light. It forms out of the particles on arrival.
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envTex = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  const solidMat = new THREE.MeshPhysicalMaterial({
+    color: new THREE.Color("#e8c4bb"),
+    roughness: 0.48,
+    metalness: 0,
+    clearcoat: 0.55,
+    clearcoatRoughness: 0.32,
+    sheen: 0.6,
+    sheenRoughness: 0.5,
+    sheenColor: new THREE.Color("#ffd7cc"),
+    envMap: envTex,
+    envMapIntensity: 0.9,
+    transparent: true,
+    opacity: 0,
+  });
+  let solid = null;
+  const key = new THREE.DirectionalLight("#fff4ea", 2.4);
+  key.position.set(-3, 4, 5);
+  const rim = new THREE.DirectionalLight("#ffe2c8", 1.6);
+  rim.position.set(4, 1.5, -3);
+  const fill = new THREE.HemisphereLight("#fff6ee", "#b9aaa2", 1.1);
+  scene.add(key, rim, fill);
+  let solidTarget = 0;
+
   loadBrain(lite ? "/assets/brain/brain-lite.bin" : "/assets/brain/brain.bin")
     .then((g) => {
       const sampler = new MeshSurfaceSampler(new THREE.Mesh(g)).build();
@@ -409,7 +441,11 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
           }
         });
       }
-      g.dispose();
+      solid = new THREE.Mesh(g, solidMat);
+      solid.position.copy(c).multiplyScalar(-s);
+      solid.scale.setScalar(s);
+      solid.visible = false;
+      group.add(solid);
       forms.brain.array.set(out);
       forms.brain.needsUpdate = true;
       onReady?.();
@@ -448,7 +484,8 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     raf = requestAnimationFrame(loop);
     if (paused || document.hidden) return;
     const now = performance.now();
-    const dt = Math.min((now - last) / 1000, 0.05);
+    const realDt = (now - last) / 1000;
+    const dt = Math.min(realDt, 0.05);
     last = now;
     const t = (now - start) / 1000;
     uniforms.uTime.value = reducedMotion ? 0 : t;
@@ -461,6 +498,23 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     uniforms.uFormColor.value.lerp(colorTarget.form, e);
     uniforms.uFormTint.value += (colorTarget.tint - uniforms.uFormTint.value) * e;
     uniforms.uAlpha.value += (colorTarget.alpha - uniforms.uAlpha.value) * e;
+    // The solid brain appears once the particles have gathered, and hands back to them on scroll.
+    if (solid) {
+      const want = solidTarget * Math.min(Math.max((uniforms.uIntro.value - 0.8) / 0.2, 0), 1);
+      // Real elapsed time, so the fade completes even on slow frames.
+      const step = 1 - Math.exp(-Math.min(realDt, 0.5) * 3);
+      solidMat.opacity += (want - solidMat.opacity) * step;
+      if (Math.abs(want - solidMat.opacity) < 0.02) solidMat.opacity = want;
+      solid.visible = solidMat.opacity > 0.01;
+      // Fully in, it is drawn as an opaque object: no see-through folds.
+      const opaque = solidMat.opacity >= 0.999;
+      if (solidMat.transparent === opaque) {
+        solidMat.transparent = !opaque;
+        solidMat.needsUpdate = true;
+      }
+      solidMat.depthWrite = opaque;
+      uniforms.uHide.value = solidMat.opacity * 0.94;
+    }
     uniforms.uPush.value += (pushTarget - uniforms.uPush.value) * (1 - Math.exp(-dt * 6));
     // The stir rises with the scroll and settles once it stops.
     stirTarget *= Math.exp(-dt * 2.5);
@@ -538,6 +592,9 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
       pointer.set(x, y);
       pushTarget = active ? 1 : 0;
     },
+    setSolid(v) {
+      solidTarget = v;
+    },
     skipIntro() {
       uniforms.uIntro.value = 1;
     },
@@ -551,6 +608,10 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       geo.dispose();
+      solid?.geometry.dispose();
+      solidMat.dispose();
+      envTex.dispose();
+      pmrem.dispose();
       fieldGeo.dispose();
       fieldMat.dispose();
       material.dispose();

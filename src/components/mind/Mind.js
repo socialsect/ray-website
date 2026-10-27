@@ -244,6 +244,8 @@ export default function Mind({ regions, children }) {
           const mind = mindRef.current;
           if (!mind) return;
           mind.setScroll(window.scrollY / H);
+          // The real brain holds the opening; it dissolves into thought as the dive begins.
+          mind.setSolid(id === "hero" ? 1 - smooth(0.04, 0.3, q) : 0);
           const prev = index > 0 ? formOf(ids[index - 1]) : formOf(id);
           mind.setForm(prev, formOf(id), index === 0 ? 1 : smooth(0, 0.4, p));
 

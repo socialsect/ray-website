@@ -142,11 +142,11 @@ export default async function HomePage() {
       <Mind regions={REGIONS}>
         <header className="absolute inset-x-0 top-0 z-40">
           <div className="flex h-16 items-center justify-between gap-6 px-5 md:h-20 md:px-8">
-            <a href="#top" className="font-serif text-[20px] tracking-[-0.01em]">
+            <a href="#top" className="font-serif text-[22px] tracking-[-0.01em]">
               RayMindset
             </a>
             <nav aria-label="Primary">
-              <ul className="flex items-center gap-7 text-[15px]">
+              <ul className="flex items-center gap-8 text-[17px] font-medium">
                 {REGIONS.slice(0, 3).map((r) => (
                   <li key={r.id} className="hidden lg:block">
                     <a href={`#${r.id}`} className="mind-link">
@@ -182,12 +182,12 @@ export default async function HomePage() {
             </div>
             <div data-hero-fade className="mind-rise absolute inset-x-5 bottom-6 flex flex-col gap-5 md:inset-x-8 md:bottom-8 md:flex-row md:items-end md:justify-between">
               <div className="max-w-[36ch]">
-                <p className="text-[17px] leading-[1.5]">{copy.heroSub.text}</p>
+                <p className="text-[19px] font-medium leading-[1.45] md:text-[22px]">{copy.heroSub.text}</p>
                 <a href="#intro" className="mind-button mt-5">
                   Step inside
                 </a>
               </div>
-              <a href="#intro" className="mind-link hidden text-[15px] md:inline">
+              <a href="#intro" className="mind-link hidden text-[17px] font-medium md:inline">
                 Scroll to enter
               </a>
             </div>
