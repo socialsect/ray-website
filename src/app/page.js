@@ -306,7 +306,7 @@ export default async function HomePage() {
           </section>
 
           {/* Ways to reach Ray, set as display rows. */}
-          <section id="connect" aria-labelledby="connect-title" className="relative grid bg-[#ff7a1f] py-24 md:py-32 lg:grid-cols-12 lg:gap-8">
+          <section id="connect" aria-labelledby="connect-title" className="relative grid bg-[#fbe4ee] pb-20 pt-24 md:pb-24 md:pt-32 lg:grid-cols-12 lg:gap-8">
             <div data-reveal-group className="px-5 md:px-8 lg:col-span-4 lg:pr-0">
               <h2 id="connect-title" data-in className="font-serif text-[clamp(36px,3.4vw,52px)] leading-[1.02] tracking-[-0.02em]">
                 {sentence(copy.contactHeadline.text)}
@@ -332,12 +332,12 @@ export default async function HomePage() {
                 { label: show.title, href: show.links[0].href, ext: true },
                 { label: "India, US, UK, UAE" },
               ].map((row, i) => (
-                <li key={row.label} data-in className={i % 2 ? "bg-[#ff8633]" : ""}>
+                <li key={row.label} data-in className={i % 2 ? "bg-[#f7d5e3]" : ""}>
                   {row.href ? (
                     <a
                       href={row.href}
                       {...(row.ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                      className="group flex items-center justify-between gap-6 px-5 py-[0.42em] transition-colors duration-300 hover:bg-[#050f16] hover:text-[#ff7a1f] md:px-8"
+                      className="group flex items-center justify-between gap-6 px-5 py-[0.42em] transition-colors duration-300 hover:bg-[#050f16] hover:text-[#fbe4ee] md:px-8"
                     >
                       {row.label}
                       <svg viewBox="0 0 24 24" aria-hidden="true" className="size-[0.45em] shrink-0 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1">
@@ -353,39 +353,72 @@ export default async function HomePage() {
           </section>
         </main>
 
-        {/* The close: an invitation over the name, cropped by the edge of the page. */}
-        <footer className="relative overflow-hidden bg-[#050f16] text-[#ff7a1f]">
-          <div data-reveal-group className="grid gap-12 px-5 pt-24 md:px-8 md:pt-32 lg:grid-cols-12 lg:gap-8">
-            <div data-in className="lg:col-span-7">
-              <p className="font-serif text-[clamp(44px,5vw,80px)] leading-[0.98] tracking-[-0.03em]">
+        {/* The close: an invitation, the ways in, and the name set across the whole page. */}
+        <footer className="relative overflow-hidden bg-[#f6f3ec]">
+          <div data-reveal-group className="grid gap-14 px-5 pt-24 md:px-8 md:pt-32 lg:grid-cols-12 lg:gap-8">
+            <div data-in className="lg:col-span-6">
+              <p className="font-serif text-[clamp(48px,5.6vw,96px)] leading-[0.95] tracking-[-0.03em]">
                 Let&apos;s build
                 <br />
                 what&apos;s next.
               </p>
-              <a href={mail} className="mind-button mind-button-inverse mt-8">
-                Write to Ray
-              </a>
+              <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
+                <a href={mail} className="mind-button">
+                  Write to Ray
+                </a>
+                <a href={mail} className="mind-link text-[17px]">
+                  {EMAIL}
+                </a>
+              </div>
             </div>
-            <ul className="space-y-3 text-[17px] lg:col-span-3 lg:col-start-10">
-              <li>
-                <a href="#top" className="mind-link">Back to the beginning</a>
-              </li>
-              {content.contactLinks.map((l) => (
-                <li key={l.href}>
-                  <a href={l.href} target="_blank" rel="noopener noreferrer" className="mind-link">
-                    {l.label}
-                  </a>
-                </li>
-              ))}
-              <li>
-                <a href="/museum" className="mind-link">The Mind Museum</a>
-              </li>
-              <li>
-                <a href="/atlas" className="mind-link">The Atlas</a>
-              </li>
-            </ul>
+            <nav data-in aria-label="Footer" className="grid grid-cols-2 gap-x-8 gap-y-10 text-[17px] sm:grid-cols-3 lg:col-span-6 lg:pt-4">
+              <div>
+                <p className="text-[15px] text-ink/60">Explore the mind</p>
+                <ul className="mt-4 space-y-2.5">
+                  {REGIONS.map((r) => (
+                    <li key={r.id}>
+                      <a href={`#${r.id}`} className="mind-link inline-flex items-center gap-2.5">
+                        <span className="size-2 rounded-full" style={{ background: r.color }} aria-hidden="true" />
+                        {r.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-[15px] text-ink/60">Ray&apos;s work</p>
+                <ul className="mt-4 space-y-2.5">
+                  <li>
+                    <a href={venture.verifiedLinks[0].href} target="_blank" rel="noopener noreferrer" className="mind-link">
+                      Socialsect
+                    </a>
+                  </li>
+                  {show.links.map((l) => (
+                    <li key={l.href}>
+                      <a href={l.href} target="_blank" rel="noopener noreferrer" className="mind-link">
+                        {show.title} on {l.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <p className="text-[15px] text-ink/60">More of this site</p>
+                <ul className="mt-4 space-y-2.5">
+                  <li>
+                    <a href="#top" className="mind-link">Back to the beginning</a>
+                  </li>
+                  <li>
+                    <a href="/museum" className="mind-link">The Mind Museum</a>
+                  </li>
+                  <li>
+                    <a href="/atlas" className="mind-link">The Atlas</a>
+                  </li>
+                </ul>
+              </div>
+            </nav>
           </div>
-          <div className="mt-24 flex flex-wrap items-end justify-between gap-x-8 gap-y-3 px-5 text-[13px] md:px-8">
+          <div className="mt-24 flex flex-wrap items-start justify-between gap-x-8 gap-y-3 px-5 text-[13px] md:px-8">
             <p>© 2026 {person.canonicalName}</p>
             <details className="max-w-[720px]">
               <summary className="cursor-pointer">Credits for the brain model and photographs</summary>
@@ -404,8 +437,13 @@ export default async function HomePage() {
               </ul>
             </details>
           </div>
-          <p aria-hidden="true" className="mind-footer-name whitespace-nowrap font-serif text-[27vw] uppercase leading-[0.8] tracking-[-0.05em]">
-            Raymindset
+          {/* The name, whole, across the page: it rises letter by letter as the page ends. */}
+          <p aria-hidden="true" data-footer-name className="mind-monument mt-10 flex justify-between overflow-hidden px-3 pb-[0.06em] font-serif text-[13.4vw] uppercase leading-[0.86] text-[#ff7a1f]">
+            {[..."Raymindset"].map((c, i) => (
+              <span key={i} data-char className="inline-block">
+                {c}
+              </span>
+            ))}
           </p>
         </footer>
       </Mind>

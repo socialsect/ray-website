@@ -335,6 +335,53 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
   const points = new THREE.Points(geo, material);
   group.add(points);
 
+  // The field: fine thoughts at every depth around the mind. Scrolling moves
+  // the near ones faster than the far ones, so the whole page has depth.
+  const FN = lite ? 900 : 2600;
+  const fieldPos = new Float32Array(FN * 3);
+  const fieldSeed = new Float32Array(FN);
+  for (let i = 0; i < FN; i++) {
+    fieldPos.set([(r() - 0.5) * 18, (r() - 0.5) * 12, -8 + r() * 10], i * 3);
+    fieldSeed[i] = r();
+  }
+  const fieldGeo = new THREE.BufferGeometry();
+  fieldGeo.setAttribute("position", new THREE.BufferAttribute(fieldPos, 3));
+  fieldGeo.setAttribute("aSeed", new THREE.BufferAttribute(fieldSeed, 1));
+  fieldGeo.boundingSphere = new THREE.Sphere(new THREE.Vector3(), 30);
+  const fieldUniforms = { uScroll: { value: 0 }, uTime: uniforms.uTime, uInk: uniforms.uInk, uAlpha: uniforms.uAlpha, uPixel: uniforms.uPixel, uIntro: uniforms.uIntro };
+  const fieldMat = new THREE.ShaderMaterial({
+    uniforms: fieldUniforms,
+    transparent: true,
+    depthWrite: false,
+    vertexShader: /* glsl */ `
+      attribute float aSeed;
+      uniform float uScroll;
+      uniform float uTime;
+      uniform float uPixel;
+      uniform float uIntro;
+      varying float vA;
+      void main() {
+        vec3 p = position;
+        float near = (p.z + 8.0) / 10.0;
+        p.y = mod(p.y + uScroll * (0.6 + near * 2.4) + uTime * 0.04 * (0.5 + aSeed) + 6.0, 12.0) - 6.0;
+        p.x += sin(uTime * 0.2 + aSeed * 30.0) * 0.15;
+        vec4 mv = viewMatrix * vec4(p, 1.0);
+        gl_Position = projectionMatrix * mv;
+        gl_PointSize = (1.2 + aSeed * 2.6) * uPixel * 6.0 / max(-mv.z, 0.5);
+        vA = (0.25 + 0.5 * aSeed) * uIntro;
+      }`,
+    fragmentShader: /* glsl */ `
+      uniform vec3 uInk;
+      uniform float uAlpha;
+      varying float vA;
+      void main() {
+        float d = length(gl_PointCoord - 0.5);
+        if (d > 0.5) discard;
+        gl_FragColor = vec4(uInk, smoothstep(0.5, 0.1, d) * vA * mix(0.6, 1.0, uAlpha));
+      }`,
+  });
+  scene.add(new THREE.Points(fieldGeo, fieldMat));
+
   // Where each region's label points: the brain particle furthest along its direction.
   const anchors = regionDirs.map((d) => d.clone().multiplyScalar(0.9));
   const screen = regions.map(() => ({ x: 0, y: 0, facing: 1 }));
@@ -485,6 +532,9 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     skipIntro() {
       uniforms.uIntro.value = 1;
     },
+    setScroll(v) {
+      fieldUniforms.uScroll.value = v;
+    },
     setPaused(v) {
       paused = v;
     },
@@ -492,6 +542,8 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
       cancelAnimationFrame(raf);
       window.removeEventListener("resize", resize);
       geo.dispose();
+      fieldGeo.dispose();
+      fieldMat.dispose();
       material.dispose();
       renderer.dispose();
     },

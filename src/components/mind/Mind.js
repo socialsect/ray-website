@@ -10,6 +10,9 @@ import { EVENTS, track } from "@/lib/analytics/track";
 const ORANGE = "#ff7a1f";
 const WHITE = "#ffffff";
 const INK = "#050f16";
+const SKY = "#cfe2ff";
+const LIME = "#e8f5d0";
+const SUN = "#ffd23f";
 
 // A chapter's ground: its colour, washed almost to white.
 const wash = (hex, k = 0.9) => {
@@ -32,6 +35,8 @@ export default function Mind({ regions, children }) {
   const tailRefs = useRef([]);
   const userHover = useRef(-1);
   const litRef = useRef(-1);
+  const idRef = useRef("hero");
+  const groundNow = useRef("");
   const [mode, setMode] = useState("pending");
   const [current, setCurrent] = useState("hero");
   const mapRef = useRef(0);
@@ -99,6 +104,14 @@ export default function Mind({ regions, children }) {
         litRef.current = lit;
         mind.setHover(lit);
       }
+      // On the map, the whole page takes the colour of the region that is lit.
+      if (idRef.current === "map" && groundRef.current) {
+        const g = lit >= 0 && show > 0.5 ? wash(regions[lit].color, 0.8) : LIME;
+        if (g !== groundNow.current) {
+          groundNow.current = g;
+          groundRef.current.style.backgroundColor = g;
+        }
+      }
       pts.forEach((s, i) => {
         const label = labelRefs.current[i];
         const line = lineRefs.current[i];
@@ -137,7 +150,7 @@ export default function Mind({ regions, children }) {
     };
     tick();
     return () => cancelAnimationFrame(raf);
-  }, [mode]);
+  }, [mode, regions]);
 
   // Scroll decides the form, the view, the colours and the page's ground.
   useEffect(() => {
@@ -186,11 +199,13 @@ export default function Mind({ regions, children }) {
           }
 
           // The page's ground: orange for the opening and the close, white between.
-          const ground = id === "hero" || id === "close" ? ORANGE : chapter >= 0 ? wash(regions[chapter].color) : WHITE;
-          if (ground !== lastGround && groundRef.current) {
-            lastGround = ground;
+          idRef.current = id;
+          const ground = id === "hero" ? ORANGE : id === "intro" ? SKY : id === "close" ? SUN : chapter >= 0 ? wash(regions[chapter].color) : id === "map" ? groundNow.current || LIME : WHITE;
+          if (id !== "map" && ground !== lastGround && groundRef.current) {
             groundRef.current.style.backgroundColor = ground;
+            groundNow.current = ground;
           }
+          lastGround = id === "map" ? "" : ground;
 
           // The monument settles as the first screen leaves.
           const q = Math.min(window.scrollY / H, 1);
@@ -204,6 +219,7 @@ export default function Mind({ regions, children }) {
 
           const mind = mindRef.current;
           if (!mind) return;
+          mind.setScroll(window.scrollY / H);
           const prev = index > 0 ? formOf(ids[index - 1]) : formOf(id);
           mind.setForm(prev, formOf(id), index === 0 ? 1 : smooth(0, 0.4, p));
 
@@ -228,8 +244,9 @@ export default function Mind({ regions, children }) {
           mind.setView(view);
 
           // Colours: white thoughts on orange; ink, tinted by the chapter, on white.
-          if (id === "hero" || id === "close") mind.setColors(WHITE, WHITE, 0);
-          else if (id === "intro") mind.setColors(INK, INK, 0, 0.42);
+          if (id === "hero") mind.setColors(WHITE, WHITE, 0);
+          else if (id === "intro") mind.setColors(INK, "#2142e8", 0.35, 0.5);
+          else if (id === "close") mind.setColors(INK, ORANGE, 0.35, 0.55);
           else if (id === "map") mind.setColors(INK, INK, 0, 0.6);
           else mind.setColors(INK, regions[chapter].color, 0.7, 0.6);
 
@@ -292,6 +309,10 @@ export default function Mind({ regions, children }) {
             scrollTrigger: { trigger: h, start: "top 82%", once: true },
           });
         });
+        // The footer's name rises letter by letter as the page ends.
+        const footerChars = document.querySelectorAll("[data-footer-name] [data-char]");
+        if (footerChars.length)
+          gsap.from(footerChars, { yPercent: 105, duration: 1.2, ease: "expo.out", stagger: 0.05, scrollTrigger: { trigger: "[data-footer-name]", start: "top 95%", once: true } });
         // Ray's own statement lights up word by word as it is read.
         gsap.utils.toArray("[data-scrub]").forEach((el) => {
           gsap.fromTo(
