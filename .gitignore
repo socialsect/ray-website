@@ -1,0 +1,15 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.env*
+!.env.example
+.taste-skill/inspect/
+.impeccable/review/
+.impeccable/config.local.json
+
+# Client brief (private) and Taste research downloads, not site source
+RayMindset_Complete_Developer_Pack/
+RayMindset_Master_Developer_Directive.docx
+/assets/

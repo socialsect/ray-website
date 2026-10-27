@@ -1,0 +1,273 @@
+@import "tailwindcss";
+
+@theme {
+  /* Light stone page, near-black ink, dark ticket stock for contrast. */
+  --color-ground: #f1f2ef;
+  --color-raised: #ffffff;
+  --color-ink: #14161a;
+  --color-muted: #555a62;
+  --color-paper: #17191e;
+  --color-building: #d4a14a;
+  --color-building-ink: #835a0c;
+  --color-discipline: #b3262f;
+  --color-exploration: #2b6f57;
+  --color-thinking: #b9c7f4;
+
+  --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@utility font-serif {
+  font-family: var(--font-bodoni), "Times New Roman", serif;
+}
+
+/* Station-signage display face: Archivo on its condensed width axis. */
+@utility font-display {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 66;
+}
+
+@layer base {
+  html {
+    background: var(--color-ground);
+    color: var(--color-ink);
+    scroll-behavior: smooth;
+    scroll-padding-top: 5rem;
+    color-scheme: light;
+    scrollbar-color: #9a9ea6 var(--color-ground);
+  }
+  body {
+    font-family: var(--font-sans);
+    font-size: 17px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: clip;
+  }
+  ::selection {
+    background: var(--color-ink);
+    color: var(--color-ground);
+  }
+  :focus-visible {
+    outline: 3px solid var(--color-ink);
+    outline-offset: 3px;
+  }
+  a {
+    text-underline-offset: 0.22em;
+    text-decoration-thickness: 1.5px;
+  }
+  h1,
+  h2 {
+    text-wrap: balance;
+  }
+  input,
+  textarea {
+    caret-color: var(--color-building-ink);
+  }
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Ticket stock: a filled card with two half-round notches cut into its sides. */
+.ticket-stock {
+  --notch: 12px;
+  mask:
+    radial-gradient(circle var(--notch) at 0 50%, #0000 98%, #000) left / 51% 100% no-repeat, /* taste-skill-ignore: mask cut-out shape, not a fill */
+    radial-gradient(circle var(--notch) at 100% 50%, #0000 98%, #000) right / 51% 100% no-repeat; /* taste-skill-ignore: mask cut-out shape, not a fill */
+}
+
+/* Stub edge: the perforated right edge of a torn-off ticket. */
+.ticket-stub {
+  mask: radial-gradient(circle 5px at 100% 50%, #0000 96%, #000) 0 0 / 100% 14px repeat-y; /* taste-skill-ignore: mask cut-out shape, not a fill */
+}
+
+/* Letter sheet: the bottom edge cut into small scallops. */
+.scallop-bottom {
+  mask:
+    linear-gradient(#000 0 0) top / 100% calc(100% - 10px) no-repeat, /* taste-skill-ignore: mask cut-out shape, not a fill */
+    radial-gradient(circle 10px at 50% 100%, #0000 98%, #000) bottom / 26px 20px repeat-x; /* taste-skill-ignore: mask cut-out shape, not a fill */
+}
+
+/* Back of the ticket: the top edge cut into scallops. */
+.scallop-top {
+  mask:
+    linear-gradient(#000 0 0) bottom / 100% calc(100% - 14px) no-repeat, /* taste-skill-ignore: mask cut-out shape, not a fill */
+    radial-gradient(circle 14px at 50% 0, #0000 98%, #000) top / 36px 28px repeat-x; /* taste-skill-ignore: mask cut-out shape, not a fill */
+}
+
+/* Luggage tag: a cut corner pair and a punched hole. */
+.luggage-tag {
+  clip-path: polygon(48px 0, 100% 0, 100% 100%, 48px 100%, 0 calc(100% - 48px), 0 48px);
+  mask: radial-gradient(circle 9px at 34px 50%, #0000 96%, #000); /* taste-skill-ignore: mask cut-out shape, not a fill */
+}
+
+/* The hero title sits on its own depth layer, a step ahead of the photograph. */
+[data-depth-layer] {
+  transform: translate3d(calc(var(--hx, 0) * -14px), calc(var(--hy, 0) * 9px), 0);
+  transition: transform 900ms var(--ease-out-expo);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-depth-layer] {
+    transform: none;
+  }
+}
+
+/* Entrances: content is visible by default; only with script and motion
+   allowed does it wait to rise in. */
+.js [data-reveal]:not(.is-in) {
+  opacity: 0;
+  transform: translateY(24px);
+}
+[data-reveal] {
+  transition:
+    opacity 700ms var(--ease-out-expo),
+    transform 900ms var(--ease-out-expo);
+  transition-delay: calc(var(--i, 0) * 80ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .js [data-reveal]:not(.is-in) {
+    opacity: 1;
+    transform: none;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 1ms !important;
+    animation-duration: 1ms !important;
+  }
+}
+
+/* Scrims: neutral darkening under text set over the 3D scene or a photo. */
+.scrim-left {
+  background: linear-gradient(to right, rgb(241 242 239 / 0.94), rgb(241 242 239 / 0.88) 52%, rgb(241 242 239 / 0.35) 78%, transparent); /* taste-skill-ignore: scrim under text */
+}
+.scrim-bottom {
+  background: linear-gradient(to top, transparent, rgb(241 242 239 / 0.95) 30%, rgb(241 242 239 / 0.82) 56%, transparent); /* taste-skill-ignore: scrim under text on photo */
+}
+.scrim-top {
+  background: linear-gradient(to bottom, rgb(241 242 239 / 0.7), transparent); /* taste-skill-ignore: scrim under text on photo */
+}
+
+/* The chapter menu truly floats over the page, so it alone casts a shadow. */
+.overlay-shadow {
+  box-shadow: 0 18px 40px -12px rgb(20 22 26 / 0.35); /* taste-skill-ignore: real overlay */
+}
+
+/* The opening doors. Hidden without script, with reduced motion, and once played. */
+.door-intro {
+  display: none;
+  perspective: 950px;
+}
+.js .door-intro:not([data-state="done"]) {
+  display: block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .js .door-intro {
+    display: none;
+  }
+}
+.door-stage {
+  transform-style: preserve-3d;
+}
+.door-leaf {
+  background: #cdbfa6;
+  will-change: transform;
+}
+.door-leaf-left {
+  transform-origin: left center;
+}
+.door-leaf-right {
+  transform-origin: right center;
+}
+.door-leaf canvas {
+  opacity: 0;
+  transition: opacity 500ms ease-out;
+}
+.door-intro[data-stone="ready"] .door-leaf canvas {
+  opacity: 1;
+}
+/* Letters cut into the stone: darker than the face, a lit lower lip. */
+.door-carving {
+  color: rgb(78 64 46 / 0.78);
+  mix-blend-mode: multiply;
+  text-shadow: 0 2px 0 rgb(255 250 240 / 0.45), 0 -1px 0 rgb(40 30 20 / 0.35); /* taste-skill-ignore: carved-stone relief, intro only */
+}
+
+/* Museum wall lettering: dark vinyl on white plaster, so it takes the wall's light. */
+.wall-text {
+  color: #23211e;
+  mix-blend-mode: multiply;
+  will-change: transform, opacity;
+}
+
+/* The Human Mind: the homepage's dark world, scoped so other pages keep theirs. */
+.theme-mind {
+  --color-ground: #05060a;
+  --color-raised: #10131c;
+  --color-ink: #eef0f6;
+  --color-muted: #9aa2b6;
+  --color-paper: #eef0f6;
+  color-scheme: dark;
+}
+.theme-mind ::selection {
+  background: #7aa2ff;
+  color: #05060a;
+}
+.theme-mind :focus-visible {
+  outline-color: #7aa2ff;
+}
+.mind-scrim {
+  background: linear-gradient(to right, rgb(5 6 10 / 0.82), rgb(5 6 10 / 0.5) 55%, transparent); /* taste-skill-ignore: scrim under text over 3D */
+}
+.mind-scrim-bottom {
+  background: linear-gradient(to top, rgb(5 6 10 / 0.9), rgb(5 6 10 / 0.6) 50%, transparent); /* taste-skill-ignore: scrim under text over 3D */
+}
+.mind-fallback {
+  background: radial-gradient(ellipse at 62% 45%, rgb(70 90 200 / 0.28), transparent 55%); /* taste-skill-ignore: no-WebGL atmosphere */
+}
+.mind-label {
+  transition: opacity 400ms ease-out;
+  will-change: transform, opacity;
+}
+@keyframes mind-scroll {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(200%); }
+}
+.mind-scroll {
+  animation: mind-scroll 1.8s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+}
+/* The invitation arrives once the brain has woken. */
+@keyframes mind-hero-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+.js .mind-hero-in {
+  animation: mind-hero-in 1.4s cubic-bezier(0.16, 1, 0.3, 1) 3.2s both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .js .mind-hero-in, .mind-scroll {
+    animation: none;
+  }
+}
+
+/* The Mind: plain photographs behind chapters until the live stage takes over. */
+.mind-live .mind-still {
+  display: none;
+}
+@keyframes mind-scroll-dot {
+  0%, 100% { transform: translateY(-6px); opacity: 0.3; }
+  50% { transform: translateY(6px); opacity: 1; }
+}
+.mind-scroll-dot {
+  animation: mind-scroll-dot 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mind-scroll-dot { animation: none; }
+}
