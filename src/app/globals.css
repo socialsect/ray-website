@@ -354,3 +354,14 @@ html.lenis body {
 .mind-pad {
   padding-inline: max(clamp(20px, 5vw, 88px), calc((100% - 1520px) / 2 + clamp(20px, 5vw, 88px)));
 }
+
+/* A chapter's photograph waits until its object has assembled, then comes into focus. */
+.mind-stage > img,
+.mind-stage > div {
+  opacity: var(--reveal, 1);
+  filter: blur(calc((1 - var(--reveal, 1)) * 18px));
+  transition: opacity 120ms linear;
+}
+.mind-live .mind-stage {
+  --reveal: 0;
+}

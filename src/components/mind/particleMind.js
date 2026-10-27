@@ -6,9 +6,8 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 // The real objects each chapter becomes (Poly Haven, CC0), and the ring built here.
 const MODELS = {
-  journey: "/assets/models/vintage_pocket_watch/vintage_pocket_watch.gltf",
+  journey: "/assets/models/seadogs_compass/seadogs_compass.gltf",
   ventures: "/assets/models/classic_laptop/classic_laptop.gltf",
-  exploration: "/assets/models/seadogs_compass/seadogs_compass.gltf",
   expression: "/assets/models/vintage_suitcase/vintage_suitcase.gltf",
   ideas: "/assets/models/lightbulb_01/lightbulb_01.gltf",
 };
@@ -18,7 +17,7 @@ const TWEAKS = {
   // The file holds two suitcases side by side; keep the first.
   expression: (scene) => scene.children.filter((c) => /_02_/.test(c.name)).forEach((c) => c.removeFromParent()),
   // Tip the compass so its face looks at the reader.
-  exploration: (scene) => {
+  journey: (scene) => {
     scene.rotation.x = 1.15;
   },
   // Clear glass with a warm glow: an idea, switched on.
@@ -71,6 +70,28 @@ function buildRing() {
     }
   }
   return ring;
+}
+
+// The Earth (NASA Blue Marble), with pins on India, the US, the UK and the UAE.
+function buildGlobe(texture, lite) {
+  const globe = new THREE.Group();
+  const earth = new THREE.Mesh(
+    new THREE.SphereGeometry(1, lite ? 72 : 128, lite ? 48 : 96),
+    new THREE.MeshStandardMaterial({ map: texture, roughness: 0.78, metalness: 0 }),
+  );
+  globe.add(earth);
+  const pinMat = new THREE.MeshStandardMaterial({ color: "#ff7a1f", emissive: "#ff7a1f", emissiveIntensity: 0.5, roughness: 0.4 });
+  for (const [lat, lon] of [[21, 78], [39, -98], [54, -2], [24, 54]]) {
+    const phi = (90 - lat) * (Math.PI / 180);
+    const theta = (lon + 180) * (Math.PI / 180);
+    const dir = new THREE.Vector3(-Math.sin(phi) * Math.cos(theta), Math.cos(phi), Math.sin(phi) * Math.sin(theta));
+    const pin = new THREE.Mesh(new THREE.SphereGeometry(0.045, 20, 14), pinMat);
+    pin.position.copy(dir).multiplyScalar(1.03);
+    globe.add(pin);
+  }
+  // Turn the hemisphere of India, the UAE and the UK toward the reader.
+  globe.rotation.set(0.32, -2.55, 0);
+  return globe;
 }
 
 // Centre an object and scale it to about two units across.
@@ -533,17 +554,33 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
   const EDGE = { value: new THREE.Color("#fff3d6") };
   const brainCenter = { value: new THREE.Vector3() };
   // Region colours painted on the brain's own surface, for the map.
+  // The exploded view: on the map the brain separates into its six regions.
+  const explode = { value: 0 };
+  const explodeDist = { value: 1 };
+  let explodeTarget = 0;
   const paintRegions = (shader) => {
+    shader.uniforms.uExplode = explode;
+    shader.uniforms.uExplodeDist = explodeDist;
     shader.uniforms.uRegion = uniforms.uRegion;
     shader.uniforms.uRegionColor = uniforms.uRegionColor;
     shader.uniforms.uMap = uniforms.uMap;
     shader.uniforms.uHover = uniforms.uHover;
     shader.uniforms.uCenter = brainCenter;
     shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nuniform vec3 uCenter;\nvarying vec3 vBrain;")
+      .replace("#include <common>", "#include <common>\nuniform vec3 uCenter;\nuniform vec3 uRegion[6];\nuniform float uExplode;\nuniform float uExplodeDist;\nvarying vec3 vBrain;")
+      .replace(
+        "#include <begin_vertex>",
+        `#include <begin_vertex>
+        {
+          vec3 bn = normalize(position - uCenter);
+          float best = -2.0; vec3 bd = uRegion[0];
+          for (int i = 0; i < 6; i++) { float d = dot(bn, uRegion[i]); if (d > best) { best = d; bd = uRegion[i]; } }
+          transformed += bd * uExplode * uExplodeDist;
+        }`,
+      )
       .replace("#include <project_vertex>", "#include <project_vertex>\nvBrain = position - uCenter;");
     shader.fragmentShader = shader.fragmentShader
-      .replace("#include <common>", "#include <common>\nuniform vec3 uRegion[6];\nuniform vec3 uRegionColor[6];\nuniform float uMap;\nuniform float uHover;\nvarying vec3 vBrain;")
+      .replace("#include <common>", "#include <common>\nuniform vec3 uRegion[6];\nuniform vec3 uRegionColor[6];\nuniform float uMap;\nuniform float uHover;\nuniform float uExplode;\nvarying vec3 vBrain;")
       .replace(
         "#include <color_fragment>",
         `#include <color_fragment>
@@ -555,15 +592,73 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
           for (int i = 0; i < 6; i++) if (i == bi) rc = uRegionColor[i];
           float lit = float(bi) == uHover ? 1.0 : 0.0;
           float amt = uMap * (uHover < 0.0 ? 0.55 : mix(0.12, 0.9, lit));
+          // Pulled apart, every region shows its own colour in full.
+          amt = max(amt, uExplode * 0.85);
           diffuseColor.rgb = mix(diffuseColor.rgb, rc, amt);
         }`,
       );
   };
-  const prepareCut = (mat, cut, extra) => {
+  // Give each triangle the direction and delay of the piece it belongs to.
+  const addPieces = (holder) => {
+    holder.traverse((m) => {
+      if (!m.isMesh) return;
+      let g = m.geometry;
+      if (g.index) {
+        const flat = g.toNonIndexed();
+        g.dispose();
+        g = flat;
+        m.geometry = g;
+      }
+      g.computeBoundingBox();
+      const box = g.boundingBox;
+      const size = box.getSize(new THREE.Vector3());
+      const centre = box.getCenter(new THREE.Vector3());
+      const spread = size.length() * 0.9 + 0.001;
+      const pos = g.attributes.position;
+      const chunk = new Float32Array(pos.count * 4);
+      const pieces = new Map();
+      const rand = rng(pos.count + 11);
+      const c = new THREE.Vector3();
+      for (let t = 0; t < pos.count; t += 3) {
+        c.set(
+          (pos.getX(t) + pos.getX(t + 1) + pos.getX(t + 2)) / 3,
+          (pos.getY(t) + pos.getY(t + 1) + pos.getY(t + 2)) / 3,
+          (pos.getZ(t) + pos.getZ(t + 1) + pos.getZ(t + 2)) / 3,
+        );
+        const key = [0, 1, 2].map((k) => Math.min(3, Math.floor(((c.getComponent(k) - box.min.getComponent(k)) / (size.getComponent(k) || 1)) * 4))).join(",");
+        let piece = pieces.get(key);
+        if (!piece) {
+          const out = c.clone().sub(centre).normalize();
+          out.x += (rand() - 0.5) * 0.8;
+          out.y += (rand() - 0.5) * 0.8 + 0.25;
+          out.z += (rand() - 0.5) * 0.8 + 0.4;
+          out.normalize().multiplyScalar(spread * (0.7 + rand() * 0.6));
+          piece = [out.x, out.y, out.z, rand()];
+          pieces.set(key, piece);
+        }
+        for (let v = 0; v < 3; v++) chunk.set(piece, (t + v) * 4);
+      }
+      g.setAttribute("aChunk", new THREE.BufferAttribute(chunk, 4));
+    });
+  };
+  const prepareCut = (mat, cut, extra, assemble) => {
     mat.onBeforeCompile = (shader) => {
       shader.uniforms.uCut = cut;
       shader.uniforms.uEdge = EDGE;
+      shader.uniforms.uAssemble = assemble;
       extra?.(shader);
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", "#include <common>\nattribute vec4 aChunk;\nuniform float uAssemble;")
+        .replace(
+          "#include <begin_vertex>",
+          `#include <begin_vertex>
+          {
+            // Each piece arrives on its own beat and locks into place.
+            float tk = clamp((uAssemble - aChunk.w * 0.45) / 0.55, 0.0, 1.0);
+            float ek = 1.0 - pow(1.0 - tk, 3.0);
+            transformed += aChunk.xyz * (1.0 - ek);
+          }`,
+        );
       shader.vertexShader = shader.vertexShader
         .replace("#include <common>", "#include <common>\nvarying float vCutY;")
         .replace("#include <project_vertex>", "#include <project_vertex>\nvCutY = (modelMatrix * vec4(transformed, 1.0)).y;");
@@ -586,8 +681,10 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
       if (!m.isMesh) return;
       for (const mat of [].concat(m.material)) if (!mats.includes(mat)) mats.push(mat);
     });
-    const cut = { value: -1e6 };
-    for (const mat of mats) prepareCut(mat, cut, id === "brain" ? paintRegions : null);
+    const cut = { value: 1e6 };
+    const assemble = { value: 0 };
+    addPieces(holder);
+    for (const mat of mats) prepareCut(mat, cut, id === "brain" ? paintRegions : null, assemble);
     group.add(holder);
     // Prepare its shaders and textures now, in the background, so the first
     // frame it is seen does not stall.
@@ -602,7 +699,7 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
       // Compiling ahead is only an optimisation.
     }
     holder.visible = false;
-    solids[id] = { holder, cut, build: 0, box: new THREE.Box3(), base: holder.scale.x, seed: Object.keys(solids).length * 1.7 };
+    solids[id] = { holder, cut, assemble, build: 0, base: holder.scale.x, seed: Object.keys(solids).length * 1.7 };
   };
   const key = new THREE.DirectionalLight("#fff4ea", 2.4);
   key.position.set(-3, 4, 5);
@@ -634,6 +731,7 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
         });
       }
       brainCenter.value.copy(c);
+      explodeDist.value = 0.42 / s;
       const brainMesh = new THREE.Mesh(g, solidMat);
       brainMesh.position.copy(c).multiplyScalar(-s);
       brainMesh.scale.setScalar(s);
@@ -653,6 +751,19 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     forms.discipline.array.set(sampleSurface(ringHolder, N));
     forms.discipline.needsUpdate = true;
     addSolid("discipline", ringHolder);
+    try {
+      const earthTex = await new THREE.TextureLoader().loadAsync("/assets/models/earth/earth_2048.webp");
+      earthTex.colorSpace = THREE.SRGBColorSpace;
+      earthTex.anisotropy = 4;
+      if (!disposed) {
+        const globeHolder = normalise(buildGlobe(earthTex, lite), 2.0);
+        forms.exploration.array.set(sampleSurface(globeHolder, N));
+        forms.exploration.needsUpdate = true;
+        addSolid("exploration", globeHolder);
+      }
+    } catch (e) {
+      console.warn("Globe unavailable", e);
+    }
     const loader = new GLTFLoader();
     for (const [id, url] of Object.entries(MODELS)) {
       if (disposed) return;
@@ -724,43 +835,25 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     {
       const started = reducedMotion || uniforms.uIntro.value > 0.12;
       const busy = Object.entries(solids).some(([id, entry]) => id !== to && entry.build > 0.02);
-      const up = Math.min(realDt, 0.1) * 1.1;
-      const down = Math.min(realDt, 0.1) * 3.2;
+      const up = Math.min(realDt, 0.3) * 1.1;
+      const down = Math.min(realDt, 0.3) * 3.2;
       for (const [id, entry] of Object.entries(solids)) {
         const want = id === to && started && !busy ? solidTarget : 0;
         if (reducedMotion) entry.build = want;
         else entry.build = want > entry.build ? Math.min(want, entry.build + up) : Math.max(want, entry.build - down);
         entry.holder.visible = entry.build > 0.001;
         if (!entry.holder.visible) continue;
-        // The entrance: it flies in from deep behind the page, turning, grows
-        // past its size and settles; on the way out it spins up and away.
-        {
-          const k = entry.build;
-          const arriving = id === to && want > 0;
-          const x = k - 1;
-          const back = 1 + 2.70158 * x * x * x + 1.70158 * x * x;
-          const idle = reducedMotion ? 0 : 1;
-          if (arriving) {
-            entry.holder.position.set(0, Math.sin(t * 0.9 + entry.seed) * 0.035 * idle, -(1 - k) * (1 - k) * 7);
-            entry.holder.rotation.set(0, (1 - k) * (1 - k) * Math.PI * 2.5 + Math.sin(t * 0.35 + entry.seed) * 0.12 * idle, 0);
-            entry.holder.scale.setScalar(entry.base * (0.3 + 0.7 * back));
-          } else {
-            entry.holder.position.set(0, (1 - k) * 1.8, 0);
-            entry.holder.rotation.set(0, -(1 - k) * 2.6, 0);
-            entry.holder.scale.setScalar(entry.base * (0.45 + 0.55 * k));
-          }
-        }
-        if (entry.build >= 1) {
-          entry.cut.value = 1e6;
-          continue;
-        }
-        entry.holder.updateMatrixWorld(true);
-        entry.box.setFromObject(entry.holder);
-        const ease = 1 - Math.pow(1 - entry.build, 2);
-        entry.cut.value = entry.box.min.y + (entry.box.max.y - entry.box.min.y) * ease * 1.02;
+        // The assembly: its pieces fly in from all around and lock together while
+        // it turns into view; leaving, it comes apart the same way.
+        entry.assemble.value = entry.build;
+        const idle = reducedMotion ? 0 : 1;
+        entry.holder.position.set(0, Math.sin(t * 0.9 + entry.seed) * 0.035 * idle, 0);
+        entry.holder.rotation.set(0, (1 - entry.build) * 1.6 + Math.sin(t * 0.35 + entry.seed) * 0.12 * idle, 0);
+        entry.holder.scale.setScalar(entry.base);
       }
     }
     uniforms.uPush.value += (pushTarget - uniforms.uPush.value) * (1 - Math.exp(-dt * 6));
+    explode.value += (explodeTarget - explode.value) * (reducedMotion ? 1 : 1 - Math.exp(-Math.min(realDt, 0.1) * 6));
     // The stir rises with the scroll and settles once it stops.
     stirTarget *= Math.exp(-dt * 2.5);
     uniforms.uStir.value += (stirTarget - uniforms.uStir.value) * (1 - Math.exp(-dt * 5));
@@ -788,7 +881,8 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     const W = canvas.clientWidth;
     const H = canvas.clientHeight;
     anchors.forEach((a, i) => {
-      tmp.copy(a).applyMatrix4(group.matrixWorld);
+      // Labels ride with their region when the brain is pulled apart.
+      tmp.copy(a).addScaledVector(regionDirs[i], explode.value * 0.42).applyMatrix4(group.matrixWorld);
       const facing = tmp.clone().sub(group.position).normalize().dot(camera.position.clone().sub(tmp).normalize());
       tmp.project(camera);
       screen[i].x = (tmp.x * 0.5 + 0.5) * W;
@@ -825,8 +919,15 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     setColors(ink, form, tint, alpha = 1) {
       colorTarget = { ink: new THREE.Color(ink), form: new THREE.Color(form), tint, alpha };
     },
+    setExplode(v) {
+      explodeTarget = v;
+    },
     setMap(v) {
       uniforms.uMap.value = v;
+    },
+    // How far a form's real object has assembled (0 to 1).
+    buildOf(id) {
+      return solids[id]?.build ?? 0;
     },
     setStir(v) {
       stirTarget = v;

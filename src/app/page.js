@@ -26,7 +26,7 @@ const PHOTOS = {
 
 const CREDITS = [
   { title: "Brain AS (3D model of the human brain)", creator: "Agnieszka Starostecka", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/", page: "https://commons.wikimedia.org/wiki/File:Brain_AS.stl" },
-  { title: "Vintage Pocket Watch (3D model)", creator: "Tal Swicegood, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/vintage_pocket_watch" },
+  { title: "Land, ocean and ice (Blue Marble), the Earth's texture", creator: "NASA Goddard Space Flight Center, Reto Stöckli", license: "CC BY-SA 3.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/", page: "https://commons.wikimedia.org/wiki/File:Land_ocean_ice_2048.jpg" },
   { title: "Classic Laptop (3D model)", creator: "Arrangemonk, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/classic_laptop" },
   { title: "Seadog’s Compass (3D model)", creator: "Benny Weimer, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/seadogs_compass" },
   { title: "Vintage Suitcase (3D model)", creator: "Maximilian Schuster, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/vintage_suitcase" },
@@ -45,10 +45,10 @@ const sentence = (s) => s.toLowerCase().replace(/^./, (c) => c.toUpperCase());
 
 // What each chapter's 3D form shows, said in words beside it.
 const FORMS = {
-  journey: "A vintage pocket watch, for the years that made the path.",
+  journey: "A ship’s compass, for the path that found me.",
   ventures: "A classic laptop: where a digital company begins.",
   discipline: "The ring: four posts, three ropes, one canvas.",
-  exploration: "A ship’s compass, for finding the way somewhere new.",
+  exploration: "The Earth: India, the US, the UK and the UAE, marked where Socialsect is built.",
   expression: "A vintage suitcase, for A Suitcase of Memories.",
   ideas: "A lightbulb: the oldest sign of a new idea.",
 };
@@ -94,7 +94,7 @@ function Chapter({ index, region, subtitle, body, children }) {
       {/* The spread holds still while it is read. */}
       <div className="mind-frame grid py-24 lg:sticky lg:top-0 lg:h-svh lg:grid-cols-12 lg:items-center lg:gap-x-10 lg:py-0">
         <figure className={`hidden lg:col-span-6 lg:row-start-1 lg:block ${stageCols}`}>
-          <div data-stage data-frame className="relative h-[70svh] overflow-hidden bg-[#eceae6]">
+          <div data-stage data-frame className="mind-stage relative h-[70svh] overflow-hidden">
             {photo}
             {/* A light veil, so the object in front reads clearly. */}
             <div aria-hidden="true" className="absolute inset-0 bg-white/35" />
@@ -244,7 +244,7 @@ export default async function HomePage() {
             </div>
           </section>
 
-          <section id="map" data-mind="map" aria-labelledby="map-title" className="relative min-h-[190svh]">
+          <section id="map" data-mind="map" aria-labelledby="map-title" className="relative min-h-[260svh]">
             <div data-reveal-group className="mind-frame sticky top-0 flex h-svh flex-col justify-between pb-10 pt-24 md:pt-28">
               <h2 id="map-title" aria-label="Six regions. One mind." className="max-w-[16ch] font-serif text-[clamp(36px,3.4vw,52px)] leading-[1.02] tracking-[-0.02em]">
                 <Rise text="Six regions. One mind." />

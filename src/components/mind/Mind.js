@@ -89,6 +89,14 @@ export default function Mind({ regions, children }) {
       }
       const mind = mindRef.current;
       if (!mind) return;
+      // A chapter's photograph appears behind its object only once the object has assembled.
+      if (regions.some((g) => g.id === idRef.current)) {
+        const stage = document.querySelector(`[data-mind="${idRef.current}"] [data-stage]`);
+        if (stage) {
+          const k = smooth(0.82, 1, mind.buildOf(idRef.current));
+          stage.style.setProperty("--reveal", k.toFixed(3));
+        }
+      }
       const W = window.innerWidth;
       const H = window.innerHeight;
       const pts = mind.screen;
@@ -263,7 +271,7 @@ export default function Mind({ regions, children }) {
             view = wide ? { x: -1.12, y: 0, z: 6, scale: 0.9, rot: -0.9 + 2.2 * p } : { x: 0, y: 0.55, z: phone ? 8.4 : 7.6, scale: 0.8, rot: -0.9 + 2.2 * p };
           } else if (id === "map") {
             // The brain turns slowly under the reader as the map is read.
-            const turn = -0.35 + 0.7 * smooth(0, 1, p);
+            const turn = -0.6 + 1.6 * smooth(0.3, 1, p);
             view = wide ? { x: 0, y: -0.04, z: 5.5, scale: 1, rot: turn } : { x: 0, y: 0.18, z: phone ? 9.4 : 7.2, scale: phone ? 0.62 : 0.86, rot: turn };
           } else if (id === "close") {
             view = wide ? { x: 0.5 * Math.tan((16 * Math.PI) / 180) * 6 * (W / H), y: 0.12, z: 6, scale: 0.8, rot: 0 } : { x: 0, y: 1.2, z: 8.4, scale: 0.58, rot: 0 };
@@ -297,7 +305,9 @@ export default function Mind({ regions, children }) {
 
           // The map lights its regions while it is read.
           // The labels wait until the map's heading has settled, then draw in one by one.
-          mapRef.current = id === "map" ? Math.min(Math.max((p - 0.46) / 0.26, 0), 1) * (1 - smooth(0.92, 1, p)) : 0;
+          mapRef.current = id === "map" ? Math.min(Math.max((p - 0.36) / 0.2, 0), 1) * (1 - smooth(0.93, 1, p)) : 0;
+          // Then the brain comes apart into its six regions, holds, and closes again.
+          mind.setExplode(id === "map" ? smooth(0.58, 0.7, p) * (1 - smooth(0.82, 0.92, p)) : 0);
           mind.setMap(mapRef.current);
           if (id === "map") mind.skipIntro();
 
