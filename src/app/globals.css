@@ -15,13 +15,11 @@
 
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-bodoni), "Times New Roman", serif;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@utility font-serif {
-  font-family: var(--font-bodoni), "Times New Roman", serif;
-}
 
 /* Station-signage display face: Archivo on its condensed width axis. */
 @utility font-display {
@@ -207,67 +205,94 @@
   will-change: transform, opacity;
 }
 
-/* The Human Mind: the homepage's dark world, scoped so other pages keep theirs. */
-.theme-mind {
-  --color-ground: #05060a;
-  --color-raised: #10131c;
-  --color-ink: #eef0f6;
-  --color-muted: #9aa2b6;
-  --color-paper: #eef0f6;
-  color-scheme: dark;
-}
-.theme-mind ::selection {
-  background: #7aa2ff;
-  color: #05060a;
-}
-.theme-mind :focus-visible {
-  outline-color: #7aa2ff;
-}
-.mind-scrim {
-  background: linear-gradient(to right, rgb(5 6 10 / 0.82), rgb(5 6 10 / 0.5) 55%, transparent); /* taste-skill-ignore: scrim under text over 3D */
-}
-.mind-scrim-bottom {
-  background: linear-gradient(to top, rgb(5 6 10 / 0.9), rgb(5 6 10 / 0.6) 50%, transparent); /* taste-skill-ignore: scrim under text over 3D */
-}
-.mind-fallback {
-  background: radial-gradient(ellipse at 62% 45%, rgb(70 90 200 / 0.28), transparent 55%); /* taste-skill-ignore: no-WebGL atmosphere */
-}
+/* Ray's mind: orange and white grounds, blue-black ink, particles behind. */
 .mind-label {
   transition: opacity 400ms ease-out;
   will-change: transform, opacity;
 }
-@keyframes mind-scroll {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(200%); }
+.mind-label:focus-visible,
+.mind-link:focus-visible,
+.mind-button:focus-visible {
+  outline: 3px solid #050f16;
+  outline-offset: 4px;
 }
-.mind-scroll {
-  animation: mind-scroll 1.8s cubic-bezier(0.6, 0, 0.3, 1) infinite;
+.mind-link {
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
+  transition: text-decoration-color 200ms ease-out;
 }
-/* The invitation arrives once the brain has woken. */
-@keyframes mind-hero-in {
-  from { opacity: 0; transform: translateY(24px); }
-  to { opacity: 1; transform: none; }
+.mind-link:hover {
+  text-decoration-color: currentColor;
 }
-.js .mind-hero-in {
-  animation: mind-hero-in 1.4s cubic-bezier(0.16, 1, 0.3, 1) 3.2s both;
+.mind-button {
+  display: inline-flex;
+  min-height: 52px;
+  align-items: center;
+  padding: 0 28px;
+  background: #050f16;
+  color: #ff7a1f;
+  font-size: 17px;
+  font-weight: 600;
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), background-color 200ms ease-out;
+}
+.mind-button:hover {
+  transform: translateY(-2px);
+}
+.mind-button:active {
+  transform: translateY(0);
+}
+.mind-button-inverse {
+  background: #ff7a1f;
+  color: #050f16;
+}
+.mind-button-inverse:focus-visible {
+  outline-color: #ff7a1f;
+}
+footer .mind-link:focus-visible {
+  outline-color: #ff7a1f;
+}
+@media (max-width: 767px) {
+  .mind-button {
+    display: flex;
+    justify-content: center;
+  }
+}
+
+/* The name rises letter by letter while the mind gathers behind it. */
+.mind-monument {
+  will-change: transform, opacity;
+  /* A sturdier optical size, so the hairlines hold at monument scale. */
+  font-weight: 600;
+  font-variation-settings: "opsz" 11;
+}
+.mind-letter {
+  display: inline-block;
+}
+@keyframes mind-letter {
+  from { transform: translateY(105%); }
+}
+.js .mind-letter {
+  animation: mind-letter 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(0.45s + var(--i) * 65ms);
+}
+@keyframes mind-rise {
+  from { opacity: 0; transform: translateY(16px); }
+}
+.js .mind-rise {
+  animation: mind-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) 1.5s both;
 }
 @media (prefers-reduced-motion: reduce) {
-  .js .mind-hero-in, .mind-scroll {
+  .js .mind-letter,
+  .js .mind-rise {
     animation: none;
   }
 }
 
-/* The Mind: plain photographs behind chapters until the live stage takes over. */
-.mind-live .mind-still {
-  display: none;
-}
-@keyframes mind-scroll-dot {
-  0%, 100% { transform: translateY(-6px); opacity: 0.3; }
-  50% { transform: translateY(6px); opacity: 1; }
-}
-.mind-scroll-dot {
-  animation: mind-scroll-dot 2s ease-in-out infinite;
-}
-@media (prefers-reduced-motion: reduce) {
-  .mind-scroll-dot { animation: none; }
+/* The footer's name, cut by the bottom edge of the page. */
+.mind-footer-name {
+  margin-top: 2rem;
+  margin-left: -0.04em;
+  transform: translateY(28%);
 }

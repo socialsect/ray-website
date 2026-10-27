@@ -29,3 +29,11 @@ Later on 2026-10-26, after client review
 19. **Chapter text is Ray's verified words only.** Each chapter's body and "Explore" panel quote his about page and podcast. Every background photo is a credited place, never a picture presented as Ray.
 20. **Fallbacks.** Without WebGL, still photos and a plain region list replace the 3D. Reduced motion skips the intro and stops the motion. Labels are real buttons that can be reached by keyboard.
 21. **Repository hygiene.** The repo is public. The client's brief (the developer pack and docx) and the Taste research downloads (`/assets/`) are kept out of git.
+
+2026-10-27, later: the light "Ray's mind" redesign
+
+22. **Light, not dark.** The client found the dark brain homepage not "wow" enough and asked for no dark theme. Taste Skill dealt "The name as a monument" (seed 1232375641) with an orange-and-black palette. The page is hot orange (`#ff7a1f`) for the opening and the close, and white for the map and chapters. The ink is blue-black (`#050f16`). Only the footer inverts.
+23. **The brain is made of particles.** 70k particles (26k on phones) are sampled from the same Brain AS mesh. They gather from scattered dust behind the name "Ray's mind". On scroll they move forward through the name, then re-form into each chapter's shape: a road (Journey), a tower with unfinished top floors (Ventures), a ring (Discipline), a globe with arcs between India, the US, the UK and the UAE (Exploration), an open book (Expression) and a spiral (Ideas). Each change is a single morph run on the graphics card (`src/components/mind/particleMind.js`).
+24. **The live thing.** The cursor or a finger parts the particles around it. On the map, hovering a region lights its particles.
+25. **House rules applied.** The chapter numbers and the number rail are removed, along with the thin outlined pills and the coloured left borders. Region labels are set in ink with a coloured dot, so they meet text contrast.
+26. **Photo stage retired from the homepage.** Each chapter now shows its credited photograph as a real image beside the words. `photoStage.js` and `brainScene.js` stay in the repo: `/atlas` uses the stage, and the brain scene is kept for reference.

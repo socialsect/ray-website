@@ -3,75 +3,68 @@
 import { useEffect, useRef, useState } from "react";
 import { EVENTS, track } from "@/lib/analytics/track";
 
-// The Human Mind. Two layers stay fixed behind the page: the anatomical
-// brain (hero and map) and a photographic stage (the chapter worlds). The
-// scroll position decides which one is seen and where the camera stands.
+// Ray's mind as one cloud of particles fixed behind the page. The scroll
+// position decides which form it holds, where it stands, its colours and
+// the colour of the page around it.
+
+const ORANGE = "#ff7a1f";
+const WHITE = "#ffffff";
+const INK = "#050f16";
+
+// A chapter's ground: its colour, washed almost to white.
+const wash = (hex, k = 0.9) => {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = (c) => Math.round(c + (255 - c) * k);
+  return `rgb(${mix(n >> 16)} ${mix((n >> 8) & 255)} ${mix(n & 255)})`;
+};
 
 const smooth = (a, b, v) => {
   const t = Math.min(Math.max((v - a) / (b - a), 0), 1);
   return t * t * (3 - 2 * t);
 };
 
-export default function Mind({ regions, frames, children }) {
-  const brainCanvas = useRef(null);
-  const stageCanvas = useRef(null);
-  const brainRef = useRef(null);
-  const stageRef = useRef(null);
+export default function Mind({ regions, children }) {
+  const canvasRef = useRef(null);
+  const groundRef = useRef(null);
+  const mindRef = useRef(null);
   const labelRefs = useRef([]);
   const lineRefs = useRef([]);
+  const tailRefs = useRef([]);
+  const userHover = useRef(-1);
+  const litRef = useRef(-1);
   const [mode, setMode] = useState("pending");
-  const [ready, setReady] = useState(false);
-  const [layer, setLayer] = useState("brain");
   const [current, setCurrent] = useState("hero");
   const mapRef = useRef(0);
   const updateRef = useRef(() => {});
 
-  // The brain, then the stage once the opening has had the GPU to itself.
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const lite = window.matchMedia("(max-width: 767px), (pointer: coarse)").matches;
     let disposed = false;
-    let stageTimer = 0;
-    import("./brainScene").then(({ createBrainScene, supportsWebGL }) => {
-      if (disposed || !brainCanvas.current) return;
+    import("./particleMind").then(({ createParticleMind, supportsWebGL }) => {
+      if (disposed || !canvasRef.current) return;
       if (!supportsWebGL()) {
         setMode("fallback");
         return;
       }
       try {
-        brainRef.current = createBrainScene(brainCanvas.current, { regions, lite, reducedMotion: reduced, onReady: () => {
-          setReady(true);
-          updateRef.current();
-        } });
+        mindRef.current = createParticleMind(canvasRef.current, { regions, lite, reducedMotion: reduced, onReady: () => updateRef.current() });
         setMode("live");
         document.documentElement.classList.add("mind-live");
+        updateRef.current();
+        mindRef.current.jumpView();
       } catch (e) {
-        console.warn("Brain scene unavailable", e);
+        console.warn("Mind scene unavailable", e);
         setMode("fallback");
-        return;
       }
-      stageTimer = window.setTimeout(() => {
-        import("@/components/scenes/photoStage").then(({ createPhotoStage }) => {
-          if (disposed || !stageCanvas.current) return;
-          try {
-            const stage = createPhotoStage(stageCanvas.current, { frames, lite, reducedMotion: reduced, dark: true });
-            stage.setIntro(1);
-            stageRef.current = stage;
-          } catch (e) {
-            console.warn("Photo stage unavailable", e);
-          }
-        });
-      }, reduced ? 0 : 2500);
     });
     return () => {
       disposed = true;
-      window.clearTimeout(stageTimer);
       document.documentElement.classList.remove("mind-live");
-      brainRef.current?.dispose();
-      stageRef.current?.dispose();
-      brainRef.current = stageRef.current = null;
+      mindRef.current?.dispose();
+      mindRef.current = null;
     };
-  }, [regions, frames]);
+  }, [regions]);
 
   // Labels and their leader lines follow the brain every frame, outside React.
   useEffect(() => {
@@ -82,50 +75,71 @@ export default function Mind({ regions, frames, children }) {
     const tick = () => {
       raf = requestAnimationFrame(tick);
       // The page state follows the true scroll position every frame it moves,
-      // so no jump or missed event can leave a stale layer on screen.
+      // so no jump or missed event can leave a stale form on screen.
       if (window.scrollY !== lastY || ++frame % 30 === 0) {
         lastY = window.scrollY;
         updateRef.current();
       }
-      const brain = brainRef.current;
-      if (!brain) return;
+      const mind = mindRef.current;
+      if (!mind) return;
       const W = window.innerWidth;
       const H = window.innerHeight;
-      const pts = brain.screen;
+      const pts = mind.screen;
       const cx = pts.reduce((a, s) => a + s.x, 0) / pts.length;
       const cy = pts.reduce((a, s) => a + s.y, 0) / pts.length;
-      const reach = Math.min(W, H) * (W < 768 ? 0.2 : 0.24);
+      const reach = Math.min(W, H) * (W < 768 ? 0.2 : 0.22);
       const show = mapRef.current;
+      // Labels stay below the map's heading.
+      const title = document.getElementById("map-title");
+      const top = Math.max(title ? title.getBoundingClientRect().bottom + 36 : 110, W < 768 ? 200 : 110);
+      // Once the map is fully drawn, it lights one region after another until the reader picks one.
+      const cycling = show > 0.95 && userHover.current < 0;
+      const lit = cycling ? Math.floor(performance.now() / 1600) % pts.length : userHover.current;
+      if (lit !== litRef.current) {
+        litRef.current = lit;
+        mind.setHover(lit);
+      }
       pts.forEach((s, i) => {
         const label = labelRefs.current[i];
         const line = lineRefs.current[i];
-        if (!label || !line) return;
+        const tailEl = tailRefs.current[i];
+        if (!label || !line || !tailEl) return;
         const dx = s.x - cx;
         const dy = s.y - cy;
         const len = Math.hypot(dx, dy) || 1;
         const right = dx >= 0;
         const arm = W < 768 ? 12 : 28;
-        const tail = right ? arm : -arm;
         // Keep the whole label on screen: leader end + tail + label width.
         const room = (label.offsetWidth || 120) + arm + 18;
         const ex = right
           ? Math.min(Math.max(s.x + (dx / len) * reach, 24), W - room)
           : Math.max(Math.min(s.x + (dx / len) * reach, W - 24), room);
-        const ey = Math.min(Math.max(s.y + (dy / len) * reach * 0.8, 110), H - 70);
-        const visible = show > 0.15 && s.facing > -0.1;
-        const o = visible ? show : 0;
-        line.setAttribute("d", `M${s.x},${s.y} L${ex},${ey} L${ex + tail},${ey}`);
-        line.style.opacity = String(o * 0.8);
-        label.style.opacity = String(o);
+        const ey = Math.min(Math.max(s.y + (dy / len) * reach * 0.8, top), H - 90);
+        // Each label is drawn in on its own beat: the line grows out of the brain, then the name arrives.
+        const beat = smooth(i * 0.1, i * 0.1 + 0.4, show);
+        const grow = smooth(0, 0.6, beat);
+        const o = smooth(0.5, 1, beat);
+        const ll = Math.hypot(ex - s.x, ey - s.y);
+        line.style.width = `${ll}px`;
+        line.style.transform = `translate3d(${s.x}px, ${s.y}px, 0) rotate(${Math.atan2(ey - s.y, ex - s.x)}rad) scaleX(${grow})`;
+        tailEl.style.width = `${arm}px`;
+        tailEl.style.transform = `translate3d(${right ? ex : ex - arm}px, ${ey}px, 0) scaleX(${smooth(0.5, 0.8, beat)})`;
+        tailEl.style.transformOrigin = right ? "0 50%" : "100% 50%";
+        const on = lit === i;
+        line.style.opacity = tailEl.style.opacity = String(grow > 0.01 ? (lit >= 0 && !on ? 0.6 : 1) : 0);
+        label.style.opacity = String(o * (lit >= 0 && !on ? 0.72 : 1));
+        // Faded out means gone: nothing invisible stays over the words.
+        const vis = grow > 0.01 ? "visible" : "hidden";
+        label.style.visibility = line.style.visibility = tailEl.style.visibility = vis;
         label.style.pointerEvents = o > 0.5 ? "auto" : "none";
-        label.style.transform = `translate3d(${right ? ex + tail + 6 : ex + tail - 6}px, ${ey}px, 0) translate(${right ? "0" : "-100%"}, -50%)`;
+        label.style.transform = `translate3d(${right ? ex + arm + 6 : ex - arm - 6}px, ${ey}px, 0) translate(${right ? "0" : "-100%"}, -50%) translateY(${(1 - o) * 10}px) scale(${on ? 1.08 : 1})`;
       });
     };
     tick();
     return () => cancelAnimationFrame(raf);
   }, [mode]);
 
-  // Scroll decides the layer, the camera and the stage.
+  // Scroll decides the form, the view, the colours and the page's ground.
   useEffect(() => {
     let ctx;
     let cancelled = false;
@@ -133,90 +147,109 @@ export default function Mind({ regions, frames, children }) {
     Promise.all([import("gsap"), import("gsap/ScrollTrigger")]).then(([{ gsap }, { ScrollTrigger }]) => {
       if (cancelled) return;
       gsap.registerPlugin(ScrollTrigger);
-      gsap.ticker.lagSmoothing(0);
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const ids = ["hero", "map", ...regions.map((r) => r.id), "close"];
+      const ids = ["hero", "intro", "map", ...regions.map((r) => r.id), "close"];
       const sections = ids.map((id) => document.querySelector(`[data-mind="${id}"]`));
+      const monument = document.querySelector("[data-monument]");
+      const heroFade = document.querySelector("[data-hero-fade]");
+      const formOf = (id) => (regions.some((r) => r.id === id) ? id : "brain");
       const seen = new Set();
       let lastId = "";
-      const proxy = { journey: 0 };
+      let lastGround = "";
       let update = () => {};
       ctx = gsap.context(() => {
-        ScrollTrigger.create({
-          trigger: document.body,
-          start: "top top",
-          end: "bottom bottom",
-          onUpdate: () => update(),
-        });
         update = () => {
-            const wide = window.innerWidth >= 1024;
-            const line = window.innerHeight * 0.55;
-            let index = 0;
-            let p = 0;
-            sections.forEach((el, k) => {
-              if (!el) return;
-              const r = el.getBoundingClientRect();
-              if (r.top <= line) {
-                index = k;
-                p = Math.min(Math.max((line - r.top) / Math.max(r.height, 1), 0), 1);
-              }
-            });
-            const id = ids[index];
-            if (id !== lastId) {
-              lastId = id;
-              setCurrent(id);
-              const ch = regions.findIndex((r) => r.id === id);
-              if (ch >= 0 && !seen.has(id)) {
-                seen.add(id);
-                track(EVENTS.chapterView, { chapter: id });
-              }
+          const W = window.innerWidth;
+          const H = window.innerHeight;
+          const wide = W >= 1024;
+          const phone = W < 768;
+          const line = H * 0.55;
+          let index = 0;
+          let p = 0;
+          sections.forEach((el, k) => {
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            if (r.top <= line) {
+              index = k;
+              p = Math.min(Math.max((line - r.top) / Math.max(r.height, 1), 0), 1);
             }
-            const brain = brainRef.current;
-            // Brain views: the hero on the right; the map centred and closer.
-            // The camera sits on the brain's right (+x): front left, cerebellum low right.
-            const heroView = { yaw: Math.PI / 2 - 0.32, pitch: 0.14, dist: wide ? 2.75 : 7.4, x: wide ? 0.21 : 0, y: wide ? -0.01 : -0.2 };
-            const mapView = { yaw: Math.PI / 2 - 0.12, pitch: 0.18, dist: wide ? 4.6 : 9.2, x: wide ? 0.04 : 0, y: wide ? -0.02 : -0.08 };
-            if (id === "hero") {
-              const t = smooth(0.45, 1, p);
-              brain?.setView({
-                yaw: heroView.yaw + (mapView.yaw - heroView.yaw) * t,
-                pitch: heroView.pitch + (mapView.pitch - heroView.pitch) * t,
-                dist: heroView.dist + (mapView.dist - heroView.dist) * t,
-                x: heroView.x + (mapView.x - heroView.x) * t,
-                y: heroView.y + (mapView.y - heroView.y) * t,
-              });
-              mapRef.current = t * 0.4;
-            } else if (id === "map") {
-              brain?.setView(mapView);
-              brain?.skipIntro?.();
-              mapRef.current = 1 - smooth(0.7, 1, p);
-            } else {
-              mapRef.current = 0;
+          });
+          const id = ids[index];
+          const chapter = regions.findIndex((r) => r.id === id);
+          if (id !== lastId) {
+            lastId = id;
+            setCurrent(id);
+            if (chapter >= 0 && !seen.has(id)) {
+              seen.add(id);
+              track(EVENTS.chapterView, { chapter: id });
             }
-            brain?.setMap(mapRef.current);
-            // Layers: the brain until the map is left, then the worlds.
-            const onStage = index >= 2 || (id === "map" && p > 0.82);
-            setLayer(onStage ? "stage" : "brain");
-            brain?.setPaused(onStage && index >= 3);
-            const stage = stageRef.current;
-            if (stage) {
-              const chapter = Math.max(0, index - 2);
-              const travel = index >= 2 ? smooth(0.62, 1, p) : 0;
-              const target = Math.min(chapter + travel, frames.length - 1);
-              stage.setSide(wide && id !== "close" ? 1 : 0);
-              stage.setChapter(frames[chapter]?.id, Math.min(p * 1.4, 1));
-              if (reduced) {
-                proxy.journey = Math.round(target);
-                stage.setJourney(proxy.journey);
-              } else {
-                gsap.to(proxy, { journey: target, duration: 0.9, ease: "power2.out", overwrite: "auto", onUpdate: () => stage.setJourney(proxy.journey) });
-              }
-            }
+          }
+
+          // The page's ground: orange for the opening and the close, white between.
+          const ground = id === "hero" || id === "close" ? ORANGE : chapter >= 0 ? wash(regions[chapter].color) : WHITE;
+          if (ground !== lastGround && groundRef.current) {
+            lastGround = ground;
+            groundRef.current.style.backgroundColor = ground;
+          }
+
+          // The monument settles as the first screen leaves.
+          const q = Math.min(window.scrollY / H, 1);
+          if (heroFade) heroFade.style.opacity = String(1 - smooth(0, 0.25, q));
+          if (monument) {
+            // Into the mind: the name opens around the reader as the brain rushes in.
+            monument.style.transform = `scale(${1 + 0.9 * smooth(0, 1, q)})`;
+            monument.style.letterSpacing = `${-0.045 + 0.06 * smooth(0, 1, q)}em`;
+            monument.style.opacity = String(1 - smooth(0.2, 0.75, q));
+          }
+
+          const mind = mindRef.current;
+          if (!mind) return;
+          const prev = index > 0 ? formOf(ids[index - 1]) : formOf(id);
+          mind.setForm(prev, formOf(id), index === 0 ? 1 : smooth(0, 0.4, p));
+
+          // Where the form stands.
+          let view;
+          if (id === "hero") {
+            const base = wide ? { x: 0, y: 0.02, z: 6.2, scale: 1.08 } : phone ? { x: 0, y: -0.6, z: 7.6, scale: 0.74 } : { x: 0, y: -0.4, z: 7, scale: 0.95 };
+            // Through the name and into the mind.
+            view = { ...base, z: base.z - 3.2 * smooth(0, 1, q), rot: 0.6 * smooth(0, 1, q) };
+          } else if (id === "intro") {
+            view = wide ? { x: -1.12, y: 0, z: 6, scale: 0.9, rot: -0.9 + 2.2 * p } : { x: 0, y: 0.55, z: phone ? 8.4 : 7.6, scale: 0.8, rot: -0.9 + 2.2 * p };
+          } else if (id === "map") {
+            // The brain turns slowly under the reader as the map is read.
+            const turn = -0.35 + 0.7 * smooth(0, 1, p);
+            view = wide ? { x: 0, y: -0.04, z: 5.5, scale: 1, rot: turn } : { x: 0, y: 0.18, z: phone ? 9.4 : 7.2, scale: phone ? 0.62 : 0.86, rot: turn };
+          } else if (id === "close") {
+            view = wide ? { x: 1.05, y: 0.12, z: 6.2, scale: 0.82, rot: 0 } : { x: 0, y: 1.2, z: 8.4, scale: 0.58, rot: 0 };
+          } else {
+            const side = chapter % 2 === 0 ? 1 : -1;
+            view = wide ? { x: side * 0.95, y: 0, z: 6, scale: 0.92, rot: -side * 0.3 } : { x: 0, y: 0.62, z: phone ? 8.4 : 7.6, scale: 0.72, rot: 0 };
+          }
+          mind.setView(view);
+
+          // Colours: white thoughts on orange; ink, tinted by the chapter, on white.
+          if (id === "hero" || id === "close") mind.setColors(WHITE, WHITE, 0);
+          else if (id === "intro") mind.setColors(INK, INK, 0, 0.42);
+          else if (id === "map") mind.setColors(INK, INK, 0, 0.6);
+          else mind.setColors(INK, regions[chapter].color, 0.7, 0.6);
+
+          // The map lights its regions while it is read.
+          // The labels wait until the map's heading has settled, then draw in one by one.
+          mapRef.current = id === "map" ? Math.min(Math.max((p - 0.3) / 0.28, 0), 1) * (1 - smooth(0.8, 0.95, p)) : 0;
+          mind.setMap(mapRef.current);
+          if (id === "map") mind.skipIntro();
+
+          // On narrow screens the form sits above the words, then steps back for them.
+          const canvas = canvasRef.current;
+          if (canvas) canvas.style.opacity = !wide && (chapter >= 0 || id === "intro") ? String(smooth(0.05, 0.15, p) * (1 - 0.82 * smooth(0.2, 0.34, p))) : "1";
+
+          // Nothing to draw once the page has passed the close.
+          const close = sections[sections.length - 1];
+          mind.setPaused(close ? close.getBoundingClientRect().bottom < 0 : false);
         };
-        // Frame the scene for wherever the page is now, and again once the brain exists.
+        ScrollTrigger.create({ trigger: document.body, start: "top top", end: "bottom bottom", onUpdate: () => update() });
         update();
         updateRef.current = update;
-        // Belt and braces: a plain scroll listener too, so a jump never leaves a stale frame.
         let queued = false;
         const onScroll = () => {
           if (queued) return;
@@ -232,16 +265,54 @@ export default function Mind({ regions, frames, children }) {
           window.removeEventListener("scroll", onScroll);
           window.removeEventListener("resize", onScroll);
         };
-        // Chapter words arrive in order, once.
-        gsap.utils.toArray("[data-mind-chapter]").forEach((el) => {
-          gsap.from(el.querySelectorAll("[data-in]"), {
-            y: 30,
+        // With reduced motion the page is simply there: no reveals.
+        if (reduced) return;
+        // The parts of every section arrive in order, once.
+        gsap.utils.toArray("[data-reveal-group]").forEach((el) => {
+          const parts = el.querySelectorAll("[data-in]");
+          if (!parts.length) return;
+          gsap.from(parts, {
+            y: 28,
             opacity: 0,
-            duration: reduced ? 0 : 1,
+            duration: 1,
             ease: "power3.out",
-            stagger: 0.09,
-            scrollTrigger: { trigger: el, start: "top 70%", once: true },
+            stagger: 0.08,
+            scrollTrigger: { trigger: el, start: "top 78%", once: true },
           });
+        });
+        // Chapter names rise letter by letter.
+        gsap.utils.toArray("[data-mind] h2[aria-label]").forEach((h) => {
+          const chars = h.querySelectorAll("[data-char]");
+          if (!chars.length) return;
+          gsap.from(chars, {
+            yPercent: 110,
+            duration: 1.1,
+            ease: "expo.out",
+            stagger: 0.035,
+            scrollTrigger: { trigger: h, start: "top 82%", once: true },
+          });
+        });
+        // Ray's own statement lights up word by word as it is read.
+        gsap.utils.toArray("[data-scrub]").forEach((el) => {
+          gsap.fromTo(
+            el.querySelectorAll("[data-w]"),
+            { opacity: 0.14 },
+            { opacity: 1, stagger: 0.1, ease: "none", scrollTrigger: { trigger: el, start: "top 80%", end: "bottom 45%", scrub: true } },
+          );
+        });
+        // The giant chapter names drift across as their chapter is read.
+        gsap.utils.toArray("[data-drift]").forEach((el) => {
+          gsap.fromTo(el, { xPercent: 20 }, { xPercent: -45, ease: "none", scrollTrigger: { trigger: el.parentElement, start: "top bottom", end: "bottom top", scrub: true } });
+        });
+        // Each chapter's photograph opens from its lower edge.
+        gsap.utils.toArray("[data-photo]").forEach((el) => {
+          gsap.fromTo(
+            el,
+            { clipPath: "inset(100% 0 0 0)" },
+            { clipPath: "inset(0% 0 0 0)", duration: 1.3, ease: "expo.out", scrollTrigger: { trigger: el, start: "top 85%", once: true } },
+          );
+          const img = el.querySelector("img");
+          if (img) gsap.fromTo(img, { scale: 1.18 }, { scale: 1, ease: "none", scrollTrigger: { trigger: el, start: "top bottom", end: "bottom top", scrub: true } });
         });
       });
     });
@@ -250,53 +321,50 @@ export default function Mind({ regions, frames, children }) {
       removeScroll();
       ctx?.revert();
     };
-  }, [regions, frames]);
+  }, [regions]);
 
-  // Pointer parallax.
+  // The live thing: the cursor (or a finger) parts the thoughts around it.
   useEffect(() => {
     const onMove = (e) => {
-      const x = (e.clientX / window.innerWidth) * 2 - 1;
-      const y = -((e.clientY / window.innerHeight) * 2 - 1);
-      brainRef.current?.setPointer(x, y);
-      stageRef.current?.setPointer(x, y);
+      mindRef.current?.setPointer((e.clientX / window.innerWidth) * 2 - 1, -((e.clientY / window.innerHeight) * 2 - 1), true);
     };
+    const onLeave = () => mindRef.current?.setPointer(9, 9, false);
     window.addEventListener("pointermove", onMove, { passive: true });
-    return () => window.removeEventListener("pointermove", onMove);
+    document.documentElement.addEventListener("pointerleave", onLeave);
+    const onUp = (e) => e.pointerType === "touch" && onLeave();
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      document.documentElement.removeEventListener("pointerleave", onLeave);
+    };
   }, []);
 
   const goTo = (id) => {
     track(EVENTS.heroEnter, { via: "brain", chapter: id });
     document.getElementById(id)?.scrollIntoView({ behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
   };
-  const hover = (i) => brainRef.current?.setHover(i);
-  const chapterIndex = regions.findIndex((r) => r.id === current);
+  const hover = (i) => {
+    userHover.current = i;
+  };
 
   return (
-    <div className="theme-mind relative bg-ground text-ink">
-      <div aria-hidden="true" className="fixed inset-0 z-0">
-        <canvas
-          ref={stageCanvas}
-          className={`absolute inset-0 h-full w-full transition-opacity duration-[1200ms] ${layer === "stage" ? "opacity-100" : "opacity-0"}`}
-        />
-        <canvas
-          ref={brainCanvas}
-          className={`absolute inset-0 h-full w-full transition-opacity duration-[1200ms] ${ready && layer === "brain" ? "opacity-100" : "opacity-0"}`}
-        />
-        {mode === "fallback" && <div className="mind-fallback absolute inset-0" />}
-        <div className={`mind-scrim absolute inset-y-0 left-0 w-full transition-opacity duration-700 lg:w-[64%] ${layer === "stage" ? "opacity-100" : "opacity-60"}`} />
-      </div>
+    <div ref={groundRef} className="relative text-ink transition-[background-color] duration-[900ms] ease-out" style={{ backgroundColor: ORANGE }}>
+      <canvas ref={canvasRef} aria-hidden="true" className="pointer-events-none fixed inset-0 z-0 h-svh w-full transition-opacity duration-300" />
 
       {/* The map: each region of the brain, labelled, and a way into it. */}
-      {mode === "live" && (
+      {mode === "live" && current === "map" && (
         <>
-          <svg aria-hidden="true" className="pointer-events-none fixed inset-0 z-20 h-full w-full">
+          {/* Leader lines: each a thin stroke of its region's colour, grown out of the brain. */}
+          <div aria-hidden="true" className="pointer-events-none fixed left-0 top-0 z-20">
             {regions.map((r, i) => (
-              <g key={r.id}>
-                <path ref={(el) => (lineRefs.current[i] = el)} fill="none" stroke={r.color} strokeWidth="1" style={{ opacity: 0 }} />
-              </g>
+              <span key={r.id}>
+                <span ref={(el) => (lineRefs.current[i] = el)} className="absolute left-0 top-0 block h-[1.5px] origin-[0_50%]" style={{ background: r.color, visibility: "hidden" }} />
+                <span ref={(el) => (tailRefs.current[i] = el)} className="absolute left-0 top-0 block h-[1.5px]" style={{ background: r.color, visibility: "hidden" }} />
+              </span>
             ))}
-          </svg>
-          <nav aria-label="Regions of Ray's mind" className={`pointer-events-none fixed inset-0 z-20 ${current === "map" || current === "hero" ? "" : "invisible"}`}>
+          </div>
+          <nav aria-label="Regions of Ray's mind" className="pointer-events-none fixed inset-0 z-20">
             {regions.map((r, i) => (
               <button
                 key={r.id}
@@ -307,27 +375,15 @@ export default function Mind({ regions, frames, children }) {
                 onPointerLeave={() => hover(-1)}
                 onFocus={() => hover(i)}
                 onBlur={() => hover(-1)}
-                className="mind-label absolute left-0 top-0 flex items-center gap-2 px-1 py-1 font-serif text-[16px] opacity-0 md:text-[19px]"
-                style={{ color: r.color }}
+                className="mind-label absolute left-0 top-0 flex min-h-11 items-center gap-2.5 px-1 font-serif text-[17px] text-ink opacity-0 md:text-[22px]"
               >
-                <span className="size-1.5 rounded-full" style={{ background: r.color, boxShadow: `0 0 10px ${r.color}` }} />
+                <span className="size-2.5 rounded-full" style={{ background: r.color }} />
                 {r.name}
               </button>
             ))}
           </nav>
         </>
       )}
-
-      {/* Where you are: the chapter number on a quiet rail. */}
-      <div aria-hidden="true" className="pointer-events-none fixed right-5 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-3 md:flex lg:right-10">
-        <span className="font-serif text-[15px] text-ink/80">{String(Math.max(chapterIndex, 0) + 1).padStart(2, "0")}</span>
-        <span className="relative block h-24 w-px bg-ink/20">
-          <span
-            className="absolute inset-x-0 top-0 bg-ink transition-[height] duration-700"
-            style={{ height: `${((Math.max(chapterIndex, 0) + 1) / regions.length) * 100}%` }}
-          />
-        </span>
-      </div>
 
       <div className="relative z-10">{children}</div>
     </div>
