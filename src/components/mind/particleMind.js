@@ -533,8 +533,20 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
       if (!m.isMesh) return;
       for (const mat of [].concat(m.material)) if (!mats.includes(mat)) mats.push(mat);
     });
-    holder.visible = false;
     group.add(holder);
+    // Prepare its shaders and textures now, in the background, so the first
+    // frame it is seen does not stall.
+    holder.visible = true;
+    holder.traverse((m) => {
+      if (!m.isMesh) return;
+      for (const mat of [].concat(m.material)) for (const key of ["map", "normalMap", "roughnessMap", "metalnessMap", "aoMap", "emissiveMap"]) if (mat[key]) renderer.initTexture(mat[key]);
+    });
+    try {
+      renderer.compile(holder, camera);
+    } catch {
+      // Compiling ahead is only an optimisation.
+    }
+    holder.visible = false;
     solids[id] = { holder, mats: mats.map((mat) => ({ mat, transparent: mat.transparent, opacity: mat.opacity })), fade: 0 };
   };
   const key = new THREE.DirectionalLight("#fff4ea", 2.4);
@@ -575,11 +587,10 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
       forms.brain.array.set(out);
       forms.brain.needsUpdate = true;
       onReady?.();
-      return loadObjects();
     })
     .catch((e) => console.warn("Brain model unavailable", e));
 
-  // The chapter objects load one by one after the brain; each one's particles
+  // The chapter objects start loading at once, alongside the brain; each one's particles
   // are re-drawn from its real surfaces so the morph lands on the object.
   async function loadObjects() {
     const ringHolder = normalise(buildRing(), 2.3);
@@ -602,6 +613,8 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
       }
     }
   }
+  loadObjects();
+
 
   // State the page drives.
   let from = "brain";
@@ -644,7 +657,7 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
 
     const e = 1 - Math.exp(-dt * 4);
     for (const k of Object.keys(view)) view[k] += (viewTarget[k] - view[k]) * e;
-    uniforms.uMix.value += (mixTarget - uniforms.uMix.value) * (reducedMotion ? 1 : 1 - Math.exp(-dt * 3));
+    uniforms.uMix.value += (mixTarget - uniforms.uMix.value) * (reducedMotion ? 1 : 1 - Math.exp(-Math.min(realDt, 0.25) * 5));
     uniforms.uInk.value.lerp(colorTarget.ink, e);
     uniforms.uFormColor.value.lerp(colorTarget.form, e);
     uniforms.uFormTint.value += (colorTarget.tint - uniforms.uFormTint.value) * e;
@@ -652,10 +665,10 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     // The real object of the current form appears once its particles have
     // gathered, and hands back to them when the page moves on.
     {
-      const settled = Math.min(Math.max((uniforms.uMix.value - 0.85) / 0.15, 0), 1);
+      const settled = Math.min(Math.max((uniforms.uMix.value - 0.6) / 0.25, 0), 1);
       const gathered = Math.min(Math.max((uniforms.uIntro.value - 0.8) / 0.2, 0), 1);
       // Real elapsed time, so fades complete even on slow frames.
-      const step = 1 - Math.exp(-Math.min(realDt, 0.5) * 3);
+      const step = 1 - Math.exp(-Math.min(realDt, 0.5) * 6);
       let shown = 0;
       for (const [id, entry] of Object.entries(solids)) {
         const want = id === to ? solidTarget * (from === to ? 1 : settled) * gathered : 0;
@@ -728,7 +741,8 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
         geo.setAttribute("aTo", forms[b]);
         uniforms.uFromBrain.value = a === "brain" ? 1 : 0;
         uniforms.uToBrain.value = b === "brain" ? 1 : 0;
-        uniforms.uMix.value = amount;
+        // Start each change from the old form, so the gather is always seen.
+        uniforms.uMix.value = from === to ? amount : 0;
       }
       mixTarget = amount;
     },

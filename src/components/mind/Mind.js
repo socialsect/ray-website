@@ -200,7 +200,8 @@ export default function Mind({ regions, children }) {
           const H = window.innerHeight;
           const wide = W >= 1024;
           const phone = W < 768;
-          const line = H * 0.55;
+          // A section takes over the moment its top enters the screen.
+          const line = H * 0.85;
           let index = 0;
           let p = 0;
           sections.forEach((el, k) => {
@@ -249,7 +250,8 @@ export default function Mind({ regions, children }) {
           // only the map keeps the brain as particles, so its regions can light.
           mind.setSolid(id === "hero" ? 1 - smooth(0.04, 0.3, q) : id === "map" ? 0 : 1);
           const prev = index > 0 ? formOf(ids[index - 1]) : formOf(id);
-          mind.setForm(prev, formOf(id), index === 0 ? 1 : smooth(0, 0.4, p));
+          // The moment a section takes over, its form gathers, on its own clock.
+          mind.setForm(prev, formOf(id), 1);
 
           // Where the form stands.
           let view;
@@ -280,13 +282,13 @@ export default function Mind({ regions, children }) {
 
           // The map lights its regions while it is read.
           // The labels wait until the map's heading has settled, then draw in one by one.
-          mapRef.current = id === "map" ? Math.min(Math.max((p - 0.3) / 0.28, 0), 1) * (1 - smooth(0.8, 0.95, p)) : 0;
+          mapRef.current = id === "map" ? Math.min(Math.max((p - 0.46) / 0.26, 0), 1) * (1 - smooth(0.92, 1, p)) : 0;
           mind.setMap(mapRef.current);
           if (id === "map") mind.skipIntro();
 
           // On narrow screens the form sits above the words, then steps back for them.
           const canvas = canvasRef.current;
-          if (canvas) canvas.style.opacity = !wide && (chapter >= 0 || id === "intro") ? String(smooth(0.05, 0.15, p) * (1 - 0.82 * smooth(0.2, 0.34, p))) : "1";
+          if (canvas) canvas.style.opacity = !wide && (chapter >= 0 || id === "intro") ? String(smooth(0.16, 0.26, p) * (1 - 0.82 * smooth(0.33, 0.47, p))) : "1";
 
           // Nothing to draw once the page has passed the close.
           const close = sections[sections.length - 1];
