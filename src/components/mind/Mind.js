@@ -246,9 +246,8 @@ export default function Mind({ regions, children }) {
           if (!mind) return;
           mind.setScroll(window.scrollY / H);
           // The real brain holds the opening; it dissolves into thought as the dive begins.
-          // Every section shows its real object once its particles have gathered;
-          // only the map keeps the brain as particles, so its regions can light.
-          mind.setSolid(id === "hero" ? 1 - smooth(0.04, 0.3, q) : id === "map" ? 0 : 1);
+          // Every section shows its real object; the map paints its regions onto the brain itself.
+          mind.setSolid(1);
           const prev = index > 0 ? formOf(ids[index - 1]) : formOf(id);
           // The moment a section takes over, its form gathers, on its own clock.
           mind.setForm(prev, formOf(id), 1);

@@ -454,6 +454,7 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
   };
   const material = new THREE.ShaderMaterial({ vertexShader: VERT, fragmentShader: FRAG, uniforms, transparent: true, depthWrite: false });
   const points = new THREE.Points(geo, material);
+  points.visible = false;
   group.add(points);
 
   // The field: fine thoughts at every depth around the mind. Scrolling moves
@@ -501,7 +502,9 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
         gl_FragColor = vec4(uInk, smoothstep(0.5, 0.1, d) * vA * mix(0.6, 1.0, uAlpha));
       }`,
   });
-  scene.add(new THREE.Points(fieldGeo, fieldMat));
+  const field = new THREE.Points(fieldGeo, fieldMat);
+  field.visible = false;
+  scene.add(field);
 
   // Where each region's label points: the brain particle furthest along its direction.
   const anchors = regionDirs.map((d) => d.clone().multiplyScalar(0.9));
@@ -524,15 +527,67 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     envMap: envTex,
     envMapIntensity: 0.9,
   });
-  // Every real object, by form: its holder, its materials and how far it is faded in.
+  // Every real object, by form: its holder, how far it is built, and its cut.
   const solids = {};
   let disposed = false;
+  const EDGE = { value: new THREE.Color("#fff3d6") };
+  const brainCenter = { value: new THREE.Vector3() };
+  // Region colours painted on the brain's own surface, for the map.
+  const paintRegions = (shader) => {
+    shader.uniforms.uRegion = uniforms.uRegion;
+    shader.uniforms.uRegionColor = uniforms.uRegionColor;
+    shader.uniforms.uMap = uniforms.uMap;
+    shader.uniforms.uHover = uniforms.uHover;
+    shader.uniforms.uCenter = brainCenter;
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nuniform vec3 uCenter;\nvarying vec3 vBrain;")
+      .replace("#include <project_vertex>", "#include <project_vertex>\nvBrain = position - uCenter;");
+    shader.fragmentShader = shader.fragmentShader
+      .replace("#include <common>", "#include <common>\nuniform vec3 uRegion[6];\nuniform vec3 uRegionColor[6];\nuniform float uMap;\nuniform float uHover;\nvarying vec3 vBrain;")
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+        {
+          vec3 bn = normalize(vBrain);
+          float best = -2.0; int bi = 0;
+          for (int i = 0; i < 6; i++) { float d = dot(bn, uRegion[i]); if (d > best) { best = d; bi = i; } }
+          vec3 rc = uRegionColor[0];
+          for (int i = 0; i < 6; i++) if (i == bi) rc = uRegionColor[i];
+          float lit = float(bi) == uHover ? 1.0 : 0.0;
+          float amt = uMap * (uHover < 0.0 ? 0.55 : mix(0.12, 0.9, lit));
+          diffuseColor.rgb = mix(diffuseColor.rgb, rc, amt);
+        }`,
+      );
+  };
+  const prepareCut = (mat, cut, extra) => {
+    mat.onBeforeCompile = (shader) => {
+      shader.uniforms.uCut = cut;
+      shader.uniforms.uEdge = EDGE;
+      extra?.(shader);
+      shader.vertexShader = shader.vertexShader
+        .replace("#include <common>", "#include <common>\nvarying float vCutY;")
+        .replace("#include <project_vertex>", "#include <project_vertex>\nvCutY = (modelMatrix * vec4(transformed, 1.0)).y;");
+      shader.fragmentShader = shader.fragmentShader
+        .replace("#include <common>", "#include <common>\nvarying float vCutY;\nuniform float uCut;\nuniform vec3 uEdge;")
+        .replace("#include <clipping_planes_fragment>", "#include <clipping_planes_fragment>\nif (vCutY > uCut) discard;")
+        .replace(
+          "#include <dithering_fragment>",
+          "#include <dithering_fragment>\nfloat edgeK = 1.0 - smoothstep(0.0, 0.035, uCut - vCutY);\ngl_FragColor.rgb = mix(gl_FragColor.rgb, uEdge, edgeK * 0.92);",
+        );
+    };
+    mat.customProgramCacheKey = () => (extra ? "cut-brain" : "cut");
+    // The open cut shows the inside of the object, not a hole.
+    mat.side = THREE.DoubleSide;
+    mat.needsUpdate = true;
+  };
   const addSolid = (id, holder) => {
     const mats = [];
     holder.traverse((m) => {
       if (!m.isMesh) return;
       for (const mat of [].concat(m.material)) if (!mats.includes(mat)) mats.push(mat);
     });
+    const cut = { value: -1e6 };
+    for (const mat of mats) prepareCut(mat, cut, id === "brain" ? paintRegions : null);
     group.add(holder);
     // Prepare its shaders and textures now, in the background, so the first
     // frame it is seen does not stall.
@@ -547,7 +602,7 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
       // Compiling ahead is only an optimisation.
     }
     holder.visible = false;
-    solids[id] = { holder, mats: mats.map((mat) => ({ mat, transparent: mat.transparent, opacity: mat.opacity })), fade: 0 };
+    solids[id] = { holder, cut, build: 0, box: new THREE.Box3(), base: holder.scale.x, seed: Object.keys(solids).length * 1.7 };
   };
   const key = new THREE.DirectionalLight("#fff4ea", 2.4);
   key.position.set(-3, 4, 5);
@@ -578,6 +633,7 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
           }
         });
       }
+      brainCenter.value.copy(c);
       const brainMesh = new THREE.Mesh(g, solidMat);
       brainMesh.position.copy(c).multiplyScalar(-s);
       brainMesh.scale.setScalar(s);
@@ -601,7 +657,8 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     for (const [id, url] of Object.entries(MODELS)) {
       if (disposed) return;
       try {
-        const gltf = await loader.loadAsync(url);
+        // One retry: a single dropped request should not leave a chapter empty.
+        const gltf = await loader.loadAsync(url).catch(() => new Promise((r) => setTimeout(r, 800)).then(() => loader.loadAsync(url)));
         if (disposed) return;
         TWEAKS[id]?.(gltf.scene);
         const holder = normalise(gltf.scene);
@@ -662,33 +719,46 @@ export function createParticleMind(canvas, { regions, lite = false, reducedMotio
     uniforms.uFormColor.value.lerp(colorTarget.form, e);
     uniforms.uFormTint.value += (colorTarget.tint - uniforms.uFormTint.value) * e;
     uniforms.uAlpha.value += (colorTarget.alpha - uniforms.uAlpha.value) * e;
-    // The real object of the current form appears once its particles have
-    // gathered, and hands back to them when the page moves on.
+    // The print. The current form's object is built from the bottom up once
+    // the last one has been taken down; real elapsed time keeps the pace even.
     {
-      const settled = Math.min(Math.max((uniforms.uMix.value - 0.6) / 0.25, 0), 1);
-      const gathered = Math.min(Math.max((uniforms.uIntro.value - 0.8) / 0.2, 0), 1);
-      // Real elapsed time, so fades complete even on slow frames.
-      const step = 1 - Math.exp(-Math.min(realDt, 0.5) * 6);
-      let shown = 0;
+      const started = reducedMotion || uniforms.uIntro.value > 0.12;
+      const busy = Object.entries(solids).some(([id, entry]) => id !== to && entry.build > 0.02);
+      const up = Math.min(realDt, 0.1) * 1.1;
+      const down = Math.min(realDt, 0.1) * 3.2;
       for (const [id, entry] of Object.entries(solids)) {
-        const want = id === to ? solidTarget * (from === to ? 1 : settled) * gathered : 0;
-        entry.fade += (want - entry.fade) * step;
-        if (Math.abs(want - entry.fade) < 0.02) entry.fade = want;
-        entry.holder.visible = entry.fade > 0.01;
-        const opaque = entry.fade >= 0.999;
-        for (const m of entry.mats) {
-          // Fully in, each material draws as it was authored: no see-through surfaces.
-          const transparent = opaque ? m.transparent : true;
-          if (m.mat.transparent !== transparent) {
-            m.mat.transparent = transparent;
-            m.mat.needsUpdate = true;
+        const want = id === to && started && !busy ? solidTarget : 0;
+        if (reducedMotion) entry.build = want;
+        else entry.build = want > entry.build ? Math.min(want, entry.build + up) : Math.max(want, entry.build - down);
+        entry.holder.visible = entry.build > 0.001;
+        if (!entry.holder.visible) continue;
+        // The entrance: it flies in from deep behind the page, turning, grows
+        // past its size and settles; on the way out it spins up and away.
+        {
+          const k = entry.build;
+          const arriving = id === to && want > 0;
+          const x = k - 1;
+          const back = 1 + 2.70158 * x * x * x + 1.70158 * x * x;
+          const idle = reducedMotion ? 0 : 1;
+          if (arriving) {
+            entry.holder.position.set(0, Math.sin(t * 0.9 + entry.seed) * 0.035 * idle, -(1 - k) * (1 - k) * 7);
+            entry.holder.rotation.set(0, (1 - k) * (1 - k) * Math.PI * 2.5 + Math.sin(t * 0.35 + entry.seed) * 0.12 * idle, 0);
+            entry.holder.scale.setScalar(entry.base * (0.3 + 0.7 * back));
+          } else {
+            entry.holder.position.set(0, (1 - k) * 1.8, 0);
+            entry.holder.rotation.set(0, -(1 - k) * 2.6, 0);
+            entry.holder.scale.setScalar(entry.base * (0.45 + 0.55 * k));
           }
-          m.mat.opacity = m.opacity * entry.fade;
-          m.mat.depthWrite = opaque ? !m.transparent || m.mat.depthWrite : false;
         }
-        shown = Math.max(shown, entry.fade);
+        if (entry.build >= 1) {
+          entry.cut.value = 1e6;
+          continue;
+        }
+        entry.holder.updateMatrixWorld(true);
+        entry.box.setFromObject(entry.holder);
+        const ease = 1 - Math.pow(1 - entry.build, 2);
+        entry.cut.value = entry.box.min.y + (entry.box.max.y - entry.box.min.y) * ease * 1.02;
       }
-      uniforms.uHide.value = shown * 0.94;
     }
     uniforms.uPush.value += (pushTarget - uniforms.uPush.value) * (1 - Math.exp(-dt * 6));
     // The stir rises with the scroll and settles once it stops.
