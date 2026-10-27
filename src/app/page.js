@@ -205,14 +205,32 @@ export default async function HomePage() {
             </div>
           </section>
 
-          {/* Ray in his own words, beside the mind. */}
+          {/* Ray in his own words, beside his own photograph. */}
           <section id="intro" data-mind="intro" aria-labelledby="intro-title" className="relative flex min-h-[120svh] items-center">
             <div data-reveal-group className="grid w-full px-5 py-32 md:px-8 lg:min-h-svh lg:grid-cols-12 lg:items-center lg:gap-8 lg:py-0">
-              <div aria-hidden="true" className="h-[46svh] lg:hidden" />
-              <p className="hidden max-w-[34ch] self-end pb-[9svh] text-[15px] lg:col-span-5 lg:row-start-1 lg:block">
-                The brain behind this page is drawn from an anatomical model of a real human brain, one point at a time.
-              </p>
-              <div className="lg:col-span-5 lg:col-start-8 lg:row-start-1">
+              {/* Ray himself, in his own published photograph. */}
+              <figure className="lg:col-span-6 lg:row-start-1">
+                <div data-photo className="aspect-[4/5] overflow-hidden bg-[#dbe6f7] lg:aspect-auto lg:h-[76svh]">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- pre-built static WebP */}
+                  <img
+                    src={optSrc(person.portrait.src, 1600)}
+                    srcSet={optSrcSet(person.portrait.src)}
+                    sizes="(min-width: 1024px) 50vw, 100vw"
+                    alt={person.portrait.alt}
+                    width={person.portrait.width}
+                    height={person.portrait.height}
+                    decoding="async"
+                    className="h-full w-full object-cover object-[46%_30%]"
+                  />
+                </div>
+                <figcaption className="mt-4 flex items-baseline justify-between gap-6 text-[15px]">
+                  <span>Rayansh Singh, founder of Socialsect.</span>
+                  <a href={person.portrait.source.href} target="_blank" rel="noopener noreferrer" className="mind-link shrink-0 text-ink/60">
+                    Photo: {person.portrait.source.label}
+                  </a>
+                </figcaption>
+              </figure>
+              <div className="mt-12 lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:mt-0">
                 <h2 id="intro-title" aria-label={sentence(copy.identityHeadline.text)} className="font-serif text-[clamp(36px,3.4vw,52px)] leading-[1.02] tracking-[-0.02em]">
                   <Rise text={sentence(copy.identityHeadline.text)} />
                 </h2>

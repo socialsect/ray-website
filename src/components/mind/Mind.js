@@ -247,7 +247,8 @@ export default function Mind({ regions, children }) {
           mind.setScroll(window.scrollY / H);
           // The real brain holds the opening; it dissolves into thought as the dive begins.
           // Every section shows its real object; the map paints its regions onto the brain itself.
-          mind.setSolid(1);
+          // The intro belongs to Ray himself: the brain steps aside for his photograph.
+          mind.setSolid(id === "intro" ? 0 : 1);
           const prev = index > 0 ? formOf(ids[index - 1]) : formOf(id);
           // The moment a section takes over, its form gathers, on its own clock.
           mind.setForm(prev, formOf(id), 1);
@@ -295,7 +296,7 @@ export default function Mind({ regions, children }) {
             canvas.style.zIndex = id === "hero" || !wide ? "0" : "15";
             canvas.style.visibility = closeEl && closeEl.getBoundingClientRect().bottom < 0 ? "hidden" : "visible";
           }
-          if (canvas) canvas.style.opacity = !wide && (chapter >= 0 || id === "intro") ? String(smooth(0.16, 0.26, p) * (1 - 0.82 * smooth(0.33, 0.47, p))) : "1";
+          if (canvas) canvas.style.opacity = !wide && chapter >= 0 ? String(smooth(0.16, 0.26, p) * (1 - 0.82 * smooth(0.33, 0.47, p))) : "1";
 
           // Nothing to draw once the page has passed the close.
           const close = sections[sections.length - 1];
