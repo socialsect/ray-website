@@ -5,24 +5,23 @@ primary_target: "src/app/page.js"
 related_targets: []
 ---
 
-## Scope
-Homepage `/` (src/app/page.js). Mode: Experience. Code-led (no image generation available). Stack pinned by the user: Next.js + JavaScript, plain Three.js, inline Tailwind, GSAP ScrollTrigger.
+# Homepage surface brief — The Infinite Ocean
 
-## Audience and job
-Stranger: understand who Ray is in five seconds and want to explore. Partner: find verified work (Socialsect) and a contact path. Reader: find ideas (podcast, essays to come). Constraints: no invented biography; Ray's own published words are the verified source (gosocialsect.com/about, his podcast listing); unconfirmed items labelled; works without WebGL or motion.
+Scope: `/` (homepage). Mode: Experience. Direction pinned by the client brief of 2026-10-28 (no roll: a brief-pinned direction beats the roll). Replaces the rejected brain concept entirely.
+
+Audience and job: strangers, partners and readers; understand Ray in seconds, follow his verified story, reach him.
+Constraints: verified content only (fixture); WebGL is enhancement; reduced motion and no-WebGL keep every word.
 
 ## Direction contract
-THESIS: The Infinite Atlas (user-pinned, 2026-10-26). Ray's mind is one connected architectural world on a dark plain under a warm horizon: a monumental gate, a plaza where raised walkways branch to a place for each chapter. Refuses the founder-site default (portrait hero, about, card grid) and generic neon tunnels, particles and glowing tubes.
 
-OWN-WORLD: Near-black ground #0B0D12, bone ink #EEF0F2, restrained line colours used only as inlaid light and chapter accents (Building amber #D9A441, Discipline red #D64550, Exploration green #5FA98A, Thinking blue #A3B8FF). Cast concrete, dark stone, brushed steel, glass for anything planned; mirror floor, fog, moonlit horizon with monolith silhouettes. Archivo condensed signage capitals over Archivo text. Ticket, tag and timetable artefacts for content.
+THESIS: Ray's world is an ocean you descend through; each verified chapter is a place at a deeper level, and depth is the progress indicator. Refuses the portfolio stack of hero + cards + grid.
 
-STORY: Arrive at the gate, read WELCOME TO RAY'S MIND. and Ray's own one-line description, enter (or skip). The camera flies through the gate to the plaza, then the tower (Socialsect lit, planned floors in glass), the ring under one hard light, the corridor of departure gates, the open suitcase with rising pages, the orbit of forms (podcast and ideas), and the bridge that ends in glass scaffolding. Leave knowing who he is, what he built, and how to reach him.
+OWN-WORLD: Midnight navy #04121f to deep blue #0a2a43, natural turquoise #2a8f99, muted cyan #9fd4da, silver #d8e2e8, warm sunlight #f3d9a8, a trace of bioluminescent #6ff0d9. Archivo only: expanded light capitals for display titles (film title cards), regular for reading. Flat colour grounds, no cards, no glass; text sits on the water with neutral scrims only.
 
-FIRST VIEWPORT: Title-sequence intro: the camera descends to the gate while the headline rises word by word (about 3.4s, skippable, absent under reduced motion). h1 at ~10vw in two lines on the left; Ray's verified line under it; Enter the mind (solid) and Skip intro (text). The gate stands right of centre with the identity cube floating inside it as loose fragments; the Atlas visible through and around it. A legend of the four lines along the bottom lights its walkways in the world on hover or focus.
+STORY: Surface at golden light → break the surface → Journey (sunlit shallows, Ray's photo and words) → Ventures (basalt-column canyon, Socialsect) → Discipline (one hard shaft of light in a narrow passage, his boxing words) → Exploration (vast valley, India · US · UK · UAE) → Expression (still meadow, the book) → Ideas (trench and the Threshold landmark, the podcast and labelled possibilities) → rise to the light and connect.
 
-FORM: Assigned direction raised into the user's pinned Infinite Atlas; seed: 7a0f20028c8ef0e4. Taste sheet: page-is-the-object, seed 1538368895. Signature interaction: GSAP ScrollTrigger drives one camera curve through every chapter (hold while reading, travel between), and each chapter transforms its own structure from scroll progress.
+FIRST VIEWPORT: Full-bleed WebGL ocean: moving waves to a far horizon, low sun breaking through cloud, mist. Header: RAYMINDSET wordmark left, chapter link and "Get in touch" right. Bottom-left: "BEYOND THE SURFACE." in expanded light capitals across ~60% width, "Every journey reveals a deeper world." beneath, a "Begin the descent" link with a slow downward indicator. Upper two thirds left empty for sky.
+
+FORM: Pinned by brief (Infinite Ocean). Signature interaction: continuous scroll-driven descent along one camera path, with light, fog and colour changing with depth, and a depth gauge that doubles as chapter navigation. Signature landmark: the Threshold, an arch of basalt columns rising from the trench under a shaft of light. seed: none (pinned by brief)
 
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
-
-## Unresolved
-Typography lock, Ray's own travel/boxing media, timeline dates, book publisher and cover, contact delivery, CMS vendor, real-GPU visual QA on target devices.

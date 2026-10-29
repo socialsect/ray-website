@@ -12,7 +12,7 @@ const widths = [960, 1600, 2400];
 const extra = { museum: [4000] };
 mkdirSync(out, { recursive: true });
 
-for (const folder of ["stage", "world", "ray", "museum", "mind"]) {
+for (const folder of ["stage", "world", "ray", "museum"]) {
   const dir = join(root, folder);
   if (!existsSync(dir)) continue;
   for (const file of readdirSync(dir)) {

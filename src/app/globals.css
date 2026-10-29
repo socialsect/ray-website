@@ -15,9 +15,13 @@
 
   --font-sans: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
   --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
-  --font-serif: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
 
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* The Doors of Possibility (homepage). */
+  --color-ivory: #f2ecdf;
+  --color-gold: #d9b779;
+  --color-ink-deep: #0d0c0b;
 }
 
 
@@ -205,163 +209,89 @@
   will-change: transform, opacity;
 }
 
-/* Ray's mind: orange and white grounds, blue-black ink, particles behind. */
-.mind-label {
-  transition: opacity 400ms ease-out;
-  will-change: transform, opacity;
+/* ---- The Doors of Possibility ------------------------------------- */
+.rm-title {
+  font-family: var(--font-display-serif), Georgia, serif;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  font-variant-numeric: lining-nums;
 }
-.mind-label:focus-visible,
-.mind-link:focus-visible,
-.mind-button:focus-visible {
-  outline: 3px solid #050f16;
-  outline-offset: 4px;
-}
-.mind-link {
-  text-decoration: underline;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 0.25em;
-  text-decoration-color: color-mix(in srgb, currentColor 40%, transparent);
-  transition: text-decoration-color 200ms ease-out;
-}
-.mind-link:hover {
-  text-decoration-color: currentColor;
-}
-.mind-button {
-  display: inline-flex;
-  min-height: 52px;
-  align-items: center;
-  padding: 0 28px;
-  background: #050f16;
-  color: #ff7a1f;
-  font-size: 17px;
-  font-weight: 600;
-  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1), background-color 200ms ease-out;
-}
-.mind-button:hover {
-  transform: translateY(-2px);
-}
-.mind-button:active {
-  transform: translateY(0);
-}
-.mind-button-inverse {
-  background: #ff7a1f;
-  color: #050f16;
-}
-.mind-button-inverse:focus-visible {
-  outline-color: #ff7a1f;
-}
-footer .mind-link:focus-visible {
-  outline-color: #ff7a1f;
-}
-@media (max-width: 767px) {
-  .mind-button {
-    display: flex;
-    justify-content: center;
-  }
-}
-
-/* Headings: Archivo, semibold and tightly set, so every word reads clearly at every size. */
-.font-serif {
-  font-weight: 600;
-  letter-spacing: -0.025em;
-}
-
-/* The name rises letter by letter while the mind gathers behind it. */
-.mind-monument {
-  will-change: transform, opacity;
-  /* The name in Archivo's heavy condensed cut: solid at any size. */
-  font-weight: 800;
-  font-stretch: 78%;
-  letter-spacing: -0.02em;
-}
-.mind-letter {
-  display: inline-block;
-}
-@keyframes mind-letter {
-  from { transform: translateY(105%); }
-}
-.js .mind-letter {
-  animation: mind-letter 1.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: calc(0.45s + var(--i) * 65ms);
-}
-@keyframes mind-rise {
-  from { opacity: 0; transform: translateY(16px); }
-}
-.js .mind-rise {
-  animation: mind-rise 1.2s cubic-bezier(0.16, 1, 0.3, 1) 1.5s both;
-}
-@media (prefers-reduced-motion: reduce) {
-  .js .mind-letter,
-  .js .mind-rise {
-    animation: none;
-  }
-}
-
-/* The footer's name, cut by the bottom edge of the page. */
-.mind-footer-name {
-  margin-top: 2rem;
-  margin-left: -0.04em;
-  transform: translateY(28%);
-}
-
-/* Smooth scrolling (Lenis) */
-html.lenis,
-html.lenis body {
-  height: auto;
-}
-.lenis.lenis-smooth {
-  scroll-behavior: auto !important;
-}
-.lenis.lenis-stopped {
-  overflow: hidden;
-}
-
-/* The photographs lean with the speed of the scroll. */
-[data-photo] {
-  transform: skewY(var(--mind-skew, 0deg));
-  transition: transform 400ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* The cursor: a disc that inverts what it passes over. */
-.mind-cursor {
-  display: none;
-}
-.mind-cursor-on .mind-cursor {
-  display: block;
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 60;
-  width: 16px;
-  height: 16px;
-  border-radius: 9999px;
-  background: #ffffff;
-  mix-blend-mode: difference;
-  pointer-events: none;
-  will-change: transform;
-}
-.mind-button {
-  transition: translate 450ms cubic-bezier(0.16, 1, 0.3, 1), transform 300ms cubic-bezier(0.16, 1, 0.3, 1), background-color 200ms ease-out;
-}
-
-/* The page's frame: one pair of generous margins and a comfortable width, everywhere. */
-.mind-frame {
+.rm-frame {
   width: 100%;
   max-width: 1520px;
   margin-inline: auto;
   padding-inline: clamp(20px, 5vw, 88px);
 }
-.mind-pad {
-  padding-inline: max(clamp(20px, 5vw, 88px), calc((100% - 1520px) / 2 + clamp(20px, 5vw, 88px)));
+@media (min-width: 1024px) {
+  [data-door]:not([data-door="hero"]):not([data-door="threshold"]) > .rm-frame {
+    padding-right: max(clamp(20px, 5vw, 88px), 200px);
+  }
+}
+.rm-link {
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.25em;
+  text-decoration-color: color-mix(in srgb, currentColor 45%, transparent);
+}
+.rm-link:hover { text-decoration-color: currentColor; }
+.rm-button {
+  display: inline-flex;
+  min-height: 54px;
+  align-items: center;
+  padding: 0 28px;
+  background: var(--color-ivory);
+  color: var(--color-ink-deep);
+  font-size: 17px;
+  font-weight: 600;
+  transition: transform 300ms var(--ease-out-expo), background-color 200ms ease-out;
+}
+.rm-button:hover { transform: translateY(-2px); background: #fff; }
+[data-door] :focus-visible, header :focus-visible, nav :focus-visible, main :focus-visible {
+  outline: 3px solid var(--color-gold);
+  outline-offset: 4px;
+}
+@keyframes rm-surface { from { opacity: 0; transform: translateY(0.3em); } }
+@keyframes rm-follow { from { opacity: 0; transform: translateY(18px); } }
+@keyframes rm-sink { 0%, 100% { transform: translateY(-2px); } 50% { transform: translateY(3px); } }
+.js .rm-hero { animation: rm-surface 1.6s var(--ease-out-expo) 0.2s both; }
+.js .rm-rise { animation: rm-follow 1.2s var(--ease-out-expo) 0.9s both; }
+.rm-sink { animation: rm-sink 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .js .rm-hero, .js .rm-rise, .rm-sink { animation: none; }
 }
 
-/* A chapter's photograph waits until its object has assembled, then comes into focus. */
-.mind-stage > img,
-.mind-stage > div {
-  opacity: var(--reveal, 1);
-  filter: blur(calc((1 - var(--reveal, 1)) * 18px));
-  transition: opacity 120ms linear;
+/* Smooth scrolling (Lenis) */
+html.lenis, html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+
+/* The scroll cue's wheel, and the menu. */
+@keyframes rm-wheel { 0% { opacity: 0; transform: translate(-50%, 0); } 30% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, 8px); } }
+.rm-wheel { animation: rm-wheel 1.8s ease-in-out infinite; }
+.rm-menu summary::-webkit-details-marker { display: none; }
+.rm-menu:not([open]) > ul { display: none; }
+@media (prefers-reduced-motion: reduce) { .rm-wheel { animation: none; } }
+
+/* Scrims under the words on the painted scenes. */
+.rm-scrim-l {
+  background: linear-gradient(to right, rgb(9 8 7 / 0.9), rgb(9 8 7 / 0.7) 32%, rgb(9 8 7 / 0.15) 60%, transparent); /* taste-skill-ignore: scrim under text on a picture */
 }
-.mind-live .mind-stage {
-  --reveal: 0;
+.rm-scrim-b {
+  background: linear-gradient(to top, rgb(9 8 7 / 0.92), rgb(9 8 7 / 0.5) 55%, transparent); /* taste-skill-ignore: scrim under text on a picture */
 }
+@media (max-width: 1023px) {
+  .rm-scrim-l { background: linear-gradient(to right, rgb(9 8 7 / 0.88), rgb(9 8 7 / 0.6)); } /* taste-skill-ignore: scrim under text on a picture */
+}
+
+/* Legibility over the live 3D scene: shades at the edges, and a soft shadow
+   under every word, since the sky behind can be as bright as white. */
+.rm-shade-left { background: linear-gradient(to right, rgb(9 8 7 / 0.86), rgb(9 8 7 / 0.72) 38%, rgb(9 8 7 / 0.3) 70%, transparent); } /* taste-skill-ignore: scrim under text over the 3D scene */
+@media (max-width: 1023px) { .rm-shade-left { background: linear-gradient(to right, rgb(9 8 7 / 0.78), rgb(9 8 7 / 0.55)); } } /* taste-skill-ignore: scrim under text over the 3D scene */
+.rm-shade-top { background: linear-gradient(to bottom, rgb(9 8 7 / 0.72), transparent); } /* taste-skill-ignore: scrim under text over the 3D scene */
+.rm-shade-right { background: linear-gradient(to left, rgb(9 8 7 / 0.7), transparent); } /* taste-skill-ignore: scrim under text over the 3D scene */
+.rm-shade-bottom { background: linear-gradient(to top, rgb(9 8 7 / 0.7), transparent); } /* taste-skill-ignore: scrim under text over the 3D scene */
+main, header, nav[aria-label="Chapters"] {
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.55), 0 2px 18px rgb(0 0 0 / 0.45); /* taste-skill-ignore: legibility over a live 3D scene */
+}
+.rm-button, .rm-panel { text-shadow: none; }

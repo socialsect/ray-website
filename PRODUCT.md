@@ -7,7 +7,7 @@
 web
 
 ## Stack
-Pinned by the RayMindset developer pack (`RayMindset_Complete_Developer_Pack/01_CLAUDE.md`): Next.js App Router, TypeScript strict, React, Tailwind CSS, semantic HTML; Three.js + React Three Fiber + Drei for bespoke 3D (lazy-loaded client islands); GSAP ScrollTrigger only where necessary, CSS for basic motion. Package manager: npm. CMS (Sanity or Payload) deferred until approval; typed local content fixtures behind a content adapter until then. Hosting preference Vercel; no deployment without explicit owner approval.
+Chosen by the client over the pack's default (2026-10-26): Next.js App Router in JavaScript (no TypeScript), plain Three.js (no React Three Fiber/Drei), Tailwind CSS classes inline, GSAP ScrollTrigger and Lenis for scroll. Package manager: npm. CMS deferred; typed local content fixtures behind a content adapter (`src/lib/content`). No deployment without explicit owner approval.
 
 ## Users
 - A curious stranger arriving from a link or a social profile, deciding in seconds whether this person is worth exploring.
@@ -16,7 +16,7 @@ Pinned by the RayMindset developer pack (`RayMindset_Complete_Developer_Pack/01_
 - Future collaborators and media who need to understand what Ray builds and how to reach him.
 
 ## Product Purpose
-RayMindset.com is the evolving digital home of Rayansh "Ray" Singh: a cinematic experience framed as "Welcome to Ray's Mind", in which the visitor discovers connected rooms (Origin, Motion, Discipline, Stories, Building, Thinking, The Unknown). It begins with mystery, becomes progressively human, and ends with a clear invitation to connect. Success: a stranger understands who Ray is within five seconds and wants to explore; a partner leaves with verified work and a contact path; readers have something worth returning for.
+RayMindset.com is the evolving digital home of Rayansh "Ray" Singh. Since 2026-10-28 the homepage concept is **The Infinite Ocean** ("Every depth reveals another dimension."): the visitor starts at the ocean surface, descends, and meets six chapters of Ray's world (Journey, Ventures, Discipline, Exploration, Expression, Ideas) at increasing depth, ending with a clear invitation to connect. The earlier brain concept was rejected by the client. Success: a stranger understands who Ray is within five seconds and wants to explore; a partner leaves with verified work and a contact path.
 
 ## Positioning
 A living record of one person in motion, not a finished success story, an agency portfolio, a motivational funnel, a luxury flex site, or a CV. Ray's identity is the umbrella; Socialsect is one chapter. Credibility over hype.
@@ -33,13 +33,13 @@ Visitors arrive on phones as often as on desktops; mobile is first-class and hea
 - Undecided: CMS vendor, final typography, chosen concept route (A Mind Museum / B Infinite Atlas / C Unfinished Monument), canonical www vs apex, contact delivery service.
 
 ## Brand Commitments
-- Name: Rayansh Singh, uses Ray. Hero line "WELCOME TO RAY'S MIND." (draft copy pending Ray's approval, see `04_CONTENT_WRITING.md`).
+- Name: Rayansh Singh, uses Ray. Homepage hero (client brief, 2026-10-28): RAYMINDSET / "BEYOND THE SURFACE." / "Every journey reveals a deeper world." Tagline: "Every depth reveals another dimension."
 - Voice: first person, direct, curious, confident, self-aware, occasionally playful. No "visionary entrepreneur", hustle clichés, billionaire slogans, or inspirational one-liners.
 - Never call Ray a billionaire, investor, hospital owner or product founder until verifiably true; ambitions phrased as "I'm exploring", "I'm interested in", "One day I may build".
-- Avoid literal brain clip art and generic tech particles.
+- No brain imagery or brain-based navigation (rejected concept). No cartoon sea life, neon, glassmorphism or generic gradients.
 
 ## Evidence on Hand
-- Brand truths from the pack (all "Needs Ray confirmation" until approved): founder of Socialsect (healthcare-practice growth and digital systems, US/UAE activity); has trained in boxing (no titles); backpacking/travel across Asia; author of *The Suitcase of Memories* (title/cover/publication unconfirmed); interests in entrepreneurship, healthcare, technology, human behaviour, AI.
+- Verified from Ray's own published words (gosocialsect.com/about, read 2026-10-26) and his podcast listing: founder of Socialsect (healthcare growth and marketing for private medical practices; built across India, the US and the UK, building presence in the UAE); writer, traveler and boxer (no titles); author of *A Suitcase of Memories* (publisher/date/cover not yet supplied); host of the podcast *One Day with Ray*; his published photograph. Ambitions (healthcare products, hospitals, technology companies) are future possibilities only.
 - Verification source: https://gosocialsect.com/about.
 - No photos, footage, book cover, logo, timeline dates, testimonials, press or statistics are in hand (confirmed 2026-10-26). None may be fabricated. Openly licensed, credited world imagery (archival places, objects) is approved as interim material, captioned as what it is and never presented as Ray.
 

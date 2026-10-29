@@ -1,467 +1,289 @@
-import Explore from "@/components/mind/Explore";
-import Mind from "@/components/mind/Mind";
+import { Cormorant_Garamond } from "next/font/google";
+import Discover from "@/components/doors/Discover";
+import Doors from "@/components/doors/Doors";
+import { chapters } from "@/components/doors/world";
 import { getHomeContent } from "@/lib/content";
 import { optSrc, optSrcSet } from "@/lib/content/images";
 import { personJsonLd } from "@/lib/seo/jsonld";
 
-// The regions are a creative map of the site, not anatomy. Directions are in
-// the scan's own space (+z front, -z back, +y up, +x the side facing us).
-const REGIONS = [
-  { id: "journey", name: "Journey", color: "#0f8b7c", dir: [0.6, -0.05, 0.85] },
-  { id: "ventures", name: "Ventures", color: "#c98a0e", dir: [0.55, 0.3, -0.85] },
-  { id: "discipline", name: "Discipline", color: "#d12a3a", dir: [0.85, -0.55, 0.05] },
-  { id: "exploration", name: "Exploration", color: "#2563eb", dir: [0.5, 0.55, 0.6] },
-  { id: "expression", name: "Expression", color: "#c0389f", dir: [0.7, -0.35, -0.55] },
-  { id: "ideas", name: "Ideas", color: "#ff7a1f", dir: [0.5, 0.75, -0.45] },
-];
+const display = Cormorant_Garamond({ subsets: ["latin"], weight: ["500", "600"], display: "swap", variable: "--font-display-serif" });
 
-const PHOTOS = {
-  journey: { src: "/assets/mind/journey.jpg", caption: "Jebel Jais, United Arab Emirates, at sunrise", alt: "A road winding up a desert mountain at sunrise." },
-  ventures: { src: "/assets/mind/ventures.jpg", caption: "Highlight Towers, Munich", alt: "Glass towers seen from below at dusk, lit from within." },
-  discipline: { src: "/assets/mind/discipline.jpg", caption: "A boxing coach at the heavy bag, from a historic archive", alt: "A boxing coach demonstrating on a heavy bag, a historic black-and-white photograph." },
-  exploration: { src: "/assets/mind/exploration.jpg", caption: "Olkhon Island, Lake Baikal, at sunset", alt: "Sea cliffs catching the last sun above a wide, calm lake." },
-  expression: { src: "/assets/mind/expression.jpg", caption: "The keys of an old typewriter", alt: "The keys of an old typewriter in low warm light." },
-  ideas: { src: "/assets/mind/ideas.jpg", caption: "The Cosmic Cliffs of the Carina Nebula, seen by Webb", alt: "Gas and dust clouds of the Carina Nebula glowing gold against blue." },
-};
-
-const CREDITS = [
-  { title: "Brain AS (3D model of the human brain)", creator: "Agnieszka Starostecka", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/", page: "https://commons.wikimedia.org/wiki/File:Brain_AS.stl" },
-  { title: "Land, ocean and ice (Blue Marble), the Earth's texture", creator: "NASA Goddard Space Flight Center, Reto Stöckli", license: "CC BY-SA 3.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/3.0/", page: "https://commons.wikimedia.org/wiki/File:Land_ocean_ice_2048.jpg" },
-  { title: "Classic Laptop (3D model)", creator: "Arrangemonk, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/classic_laptop" },
-  { title: "Seadog’s Compass (3D model)", creator: "Benny Weimer, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/seadogs_compass" },
-  { title: "Vintage Suitcase (3D model)", creator: "Maximilian Schuster, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/vintage_suitcase" },
-  { title: "Lightbulb 01 (3D model)", creator: "Josh Dean, Poly Haven", license: "CC0 1.0", licenseUrl: "https://creativecommons.org/publicdomain/zero/1.0/", page: "https://polyhaven.com/a/lightbulb_01" },
-  { title: "Sunrise on the Jebel Jais Mountain", creator: "Clintonrebeiro", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", page: "https://commons.wikimedia.org/wiki/File:Sunrise_on_the_Jebel_Jais_Mountain_on_a_Chilly_Winter_Morning.jpg" },
-  { title: "Highlight Towers Munich", creator: "Martin Falbisoner", license: "CC BY-SA 4.0", licenseUrl: "https://creativecommons.org/licenses/by-sa/4.0/", page: "https://commons.wikimedia.org/wiki/File:Highlight_Towers_Munich,_February_2017_-01.jpg" },
-  { title: "Penn State Boxing Coach Demonstrates on Heavy Punching Bag", creator: "US Army Signal Corps (Hennepin County Library)", license: "Public domain", licenseUrl: "https://creativecommons.org/publicdomain/mark/1.0/", page: "https://commons.wikimedia.org/wiki/File:Penn_State_Boxing_Coach_Demonstrates_on_Heavy_Punching_Bag_-_DPLA_-_2ed616aeb7f078509e1eec4ac4f6167e.jpg" },
-  { title: "Olkhon Island, cliffs at sunset, Lake Baikal", creator: "Vyacheslav Argenberg", license: "CC BY 4.0", licenseUrl: "https://creativecommons.org/licenses/by/4.0/", page: "https://commons.wikimedia.org/wiki/File:Olkhon_Island,_Capes,_cliffs_at_sunset,_Lake_Baikal,_Russia.jpg" },
-  { title: "Old typewriter analog keyboard closeup", creator: "Shixart1985", license: "CC BY 2.0", licenseUrl: "https://creativecommons.org/licenses/by/2.0/", page: "https://commons.wikimedia.org/wiki/File:Old_typewriter_analog_keyboard_closeup.jpg" },
-  { title: "Cosmic Cliffs in the Carina Nebula", creator: "NASA, ESA, CSA, STScI", license: "Public domain", licenseUrl: "https://creativecommons.org/publicdomain/mark/1.0/", page: "https://commons.wikimedia.org/wiki/File:NASA%E2%80%99s_Webb_Reveals_Cosmic_Cliffs,_Glittering_Landscape_of_Star_Birth.jpg" },
-];
+export const viewport = { themeColor: "#0d0c0b", colorScheme: "dark" };
 
 const EMAIL = "sales@gosocialsect.com";
-const MONUMENT = "Ray’s mind";
-const sentence = (s) => s.toLowerCase().replace(/^./, (c) => c.toUpperCase());
+const C = Object.fromEntries(chapters.map((c, i) => [c.id, { ...c, n: String(i + 1).padStart(2, "0") }]));
 
-// What each chapter's 3D form shows, said in words beside it.
-const FORMS = {
-  journey: "A ship’s compass, for the path that found me.",
-  ventures: "A classic laptop: where a digital company begins.",
-  discipline: "The ring: four posts, three ropes, one canvas.",
-  exploration: "The Earth: India, the US, the UK and the UAE, marked where Socialsect is built.",
-  expression: "A vintage suitcase, for A Suitcase of Memories.",
-  ideas: "A lightbulb: the oldest sign of a new idea.",
-};
-
-// A heading whose words rise into place, each from behind its own edge.
+// Words that surface from below their own edge, one after another.
 function Rise({ text }) {
   return (
     <span aria-hidden="true">
       {text.split(" ").map((w, i) => (
-        <span key={i} className="inline-block overflow-hidden pb-[0.12em] align-bottom">
-          <span data-char className="inline-block">
-            {w}
-            {" "}
-          </span>
+        <span key={i} className="inline-block overflow-hidden pb-[0.06em] align-bottom">
+          <span data-word className="inline-block">{w}&nbsp;</span>
         </span>
       ))}
     </span>
   );
 }
 
-// A statement lit word by word as it is read.
-function Scrub({ text }) {
-  return text.split(" ").map((w, i) => (
-    <span key={i} data-w>
-      {w}{" "}
+// A small mouse, the reference's cue to scroll.
+function Mouse() {
+  return (
+    <span aria-hidden="true" className="relative inline-block h-8 w-5 rounded-full border border-ivory/80">
+      <span className="rm-wheel absolute left-1/2 top-1.5 h-1.5 w-[2px] -translate-x-1/2 rounded-full bg-ivory" />
     </span>
-  ));
+  );
 }
 
-function Chapter({ index, region, subtitle, body, children }) {
-  const p = PHOTOS[region.id];
-  // A spread: the stage (its real place, with the real object in front of it)
-  // on one side, the words on the other. Sides alternate down the page.
-  const stageLeft = index % 2 === 0;
-  const stageCols = stageLeft ? "lg:col-start-1" : "lg:col-start-7";
-  const textCols = stageLeft ? "lg:col-start-8" : "lg:col-start-1";
-  const photo = (
-    // eslint-disable-next-line @next/next/no-img-element -- pre-built static WebP
-    <img src={optSrc(p.src, 1600)} srcSet={optSrcSet(p.src)} sizes="(min-width: 1024px) 50vw, 100vw" alt={p.alt} loading="lazy" decoding="async" className="h-full w-full object-cover" />
-  );
+// Every chapter: its number, name and line, one short sentence in Ray's
+// words, and "Discover" for the fuller story. The world fills the screen.
+function Chapter({ id, line, source, children }) {
+  const c = C[id];
   return (
-    <section id={region.id} data-mind={region.id} aria-labelledby={`${region.id}-title`} className="relative lg:h-[200svh]">
-      {/* The spread holds still while it is read. */}
-      <div className="mind-frame grid py-24 lg:sticky lg:top-0 lg:h-svh lg:grid-cols-12 lg:items-center lg:gap-x-10 lg:py-0">
-        <figure className={`hidden lg:col-span-6 lg:row-start-1 lg:block ${stageCols}`}>
-          <div data-stage data-frame className="mind-stage relative h-[70svh] overflow-hidden">
-            {photo}
-            {/* A light veil, so the object in front reads clearly. */}
-            <div aria-hidden="true" className="absolute inset-0 bg-white/35" />
-          </div>
-          <figcaption className="mt-4 flex items-baseline justify-between gap-6 text-[15px]">
-            <span>{FORMS[region.id]}</span>
-            <span className="shrink-0 text-ink/60">{p.caption}</span>
-          </figcaption>
-        </figure>
-
-        <div data-reveal-group data-drift-col className={`lg:col-span-5 lg:row-start-1 ${textCols}`}>
-          {/* On narrow screens the object fills this space before the words arrive. */}
-          <div aria-hidden="true" className="h-[52svh] lg:hidden" />
-          <h2 id={`${region.id}-title`} aria-label={region.name} className="flex items-center gap-4 font-serif text-[clamp(56px,6vw,100px)] leading-[0.92] tracking-[-0.035em]">
-            <span className="size-[0.16em] shrink-0 rounded-full" style={{ background: region.color }} aria-hidden="true" />
-            <span aria-hidden="true" className="inline-flex overflow-hidden pb-[0.08em]">
-              {[...region.name].map((c, i) => (
-                <span key={i} data-char className="inline-block">
-                  {c}
-                </span>
-              ))}
-            </span>
+    <section id={id} tabIndex={-1} data-door={id} data-shade="0.9,0.25,0.3,0.25,0" aria-labelledby={`${id}-title`} className="relative min-h-[220svh] outline-none">
+      <div className="rm-frame relative pb-24 pt-28 lg:sticky lg:top-0 lg:flex lg:min-h-svh lg:flex-col lg:pt-[18svh]">
+        <div data-reveal-group className="max-w-[440px]">
+          <p data-in className="rm-title text-[17px] text-gold">{c.n}</p>
+          <h2 id={`${id}-title`} aria-label={`${c.name}: ${c.line}`} data-rise className="rm-title mt-2 text-[10vw] leading-[1] md:text-[clamp(36px,2.9vw,50px)]">
+            <Rise text={c.name} />
           </h2>
-          <p data-in className="mt-5 max-w-[26ch] font-serif text-[clamp(24px,2vw,32px)] leading-[1.2]">
-            {subtitle}
-          </p>
-          <p data-in className="mt-7 max-w-[44ch] text-[18px] leading-[1.65]">
-            {body}
-          </p>
-          <figure data-in className="mt-8 lg:hidden">
-            <div data-photo className="aspect-[4/3] overflow-hidden bg-[#eceae6]">{photo}</div>
-            <figcaption className="mt-3 text-[15px] text-ink/70">{p.caption}</figcaption>
-          </figure>
+          <p data-in className="mt-2 text-[17px]">{c.line}</p>
+          <p data-in className="mt-5 max-w-[36ch] text-[15px] leading-[1.6] text-ivory/90">&ldquo;{line}&rdquo;</p>
+          <p data-in className="mt-2 text-[13px] text-ivory/70">{source}</p>
           <div data-in>
-            <Explore name={region.name}>{children}</Explore>
+            <Discover name={c.name}>{children}</Discover>
           </div>
-          <p className="mt-8 max-w-[30ch] text-[15px] lg:hidden">{FORMS[region.id]}</p>
         </div>
       </div>
     </section>
   );
 }
 
+// A photograph inside a Discover panel, with its credit.
+function Picture({ img, caption, className = "aspect-[4/3]" }) {
+  return (
+    <figure>
+      <div className={`overflow-hidden ${className}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element -- pre-built static WebP */}
+        <img src={optSrc(img.src, 960)} srcSet={optSrcSet(img.src)} sizes="(min-width: 768px) 560px, 90vw" alt={img.alt} loading="lazy" decoding="async" className="h-full w-full object-cover" />
+      </div>
+      {caption && <figcaption className="mt-2 text-[13px] leading-[1.5] text-ivory/75">{caption}</figcaption>}
+    </figure>
+  );
+}
+
 export default async function HomePage() {
   const content = await getHomeContent();
-  const { copy, quotes, person, book, media, values, timeline } = content;
-  const st = Object.fromEntries(content.stations.map((s) => [s.id, s]));
-  const show = media.find((m) => m.format === "podcast");
-  const R = Object.fromEntries(REGIONS.map((r, i) => [r.id, { region: r, index: i }]));
+  const { copy, quotes, person, values, timeline, images, book, media, possibilities } = content;
   const venture = content.ventures.find((v) => v.featured);
-  const mail = `mailto:${EMAIL}?subject=${encodeURIComponent("Hello Ray")}`;
+  const show = media.find((m) => m.format === "podcast");
+  const credit = (i) => `${i.caption.replace(/\.$/, "")}. Photo: ${i.credit.creator}, ${i.credit.license}.`;
+  const places = [
+    { name: "India", note: "Socialsect is built here", img: images.tungnath },
+    { name: "The US", note: "Socialsect is built here", img: { src: "/assets/world/new-york-dusk.jpg", alt: "Manhattan at dusk, the Empire State Building lit green.", caption: "New York at dusk", credit: { creator: "Dllu", license: "CC BY-SA 4.0" } } },
+    { name: "The UK", note: "Socialsect is built here", img: { src: "/assets/world/london-dusk.jpg", alt: "Tower Bridge over the Thames at dusk.", caption: "Tower Bridge, London", credit: { creator: "Diliff", license: "CC BY-SA 3.0" } } },
+    { name: "The UAE", note: "Building its presence now", img: images.dubai },
+  ];
+  const ABOUT = "Rayansh, gosocialsect.com/about";
 
   return (
-    <>
+    <div className={display.variable}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(personJsonLd(person)) }} />
-      <Mind regions={REGIONS}>
+      <Doors>
         <header className="absolute inset-x-0 top-0 z-40">
-          <div className="flex h-16 items-center justify-between gap-6 px-5 md:h-20 md:px-8">
-            <a href="#top" className="font-serif text-[22px] tracking-[-0.01em]">
-              RayMindset
-            </a>
-            <nav aria-label="Primary">
-              <ul className="flex items-center gap-8 text-[17px] font-medium">
-                {REGIONS.slice(0, 3).map((r) => (
-                  <li key={r.id} className="hidden lg:block">
-                    <a href={`#${r.id}`} className="mind-link">
-                      {r.name}
+          <div className="rm-frame flex h-16 items-center justify-between gap-6 md:h-20">
+            <a href="#top" className="text-[14px] font-semibold tracking-[0.35em]">RAYMINDSET</a>
+            <nav aria-label="Primary" className="hidden lg:block">
+              <ul className="flex items-center gap-7 text-[15px]">
+                <li>
+                  <a href="#top" className="border-b border-ivory pb-1">Home</a>
+                </li>
+                {chapters.map((c) => (
+                  <li key={c.id}>
+                    <a href={`#${c.id}`} className="pb-1 text-ivory/85 transition-colors hover:text-ivory">{c.name}</a>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+            {/* The menu: every chapter and the way to write, on any screen. */}
+            <details className="rm-menu relative">
+              <summary aria-label="Menu" className="flex size-11 cursor-pointer list-none items-center justify-center">
+                <span aria-hidden="true" className="flex w-6 flex-col gap-[6px]">
+                  <span className="h-px w-full bg-ivory" />
+                  <span className="h-px w-full bg-ivory" />
+                  <span className="h-px w-full bg-ivory" />
+                </span>
+              </summary>
+              <ul className="absolute right-0 top-12 w-[240px] bg-ink-deep/95 py-3 text-[17px]">
+                <li><a href="#top" className="flex min-h-11 items-center px-5">Home</a></li>
+                {chapters.map((c) => (
+                  <li key={c.id}>
+                    <a href={`#${c.id}`} className="flex min-h-11 items-center gap-3 px-5">
+                      <span className="text-[13px] text-gold">{C[c.id].n}</span>
+                      {c.name}
                     </a>
                   </li>
                 ))}
-                <li>
-                  <a href="#connect" className="mind-link">
-                    Get in touch
-                  </a>
-                </li>
+                <li><a href={`mailto:${EMAIL}?subject=Hello%20Ray`} className="flex min-h-11 items-center px-5 text-gold">Write to Ray</a></li>
               </ul>
-            </nav>
+            </details>
           </div>
         </header>
 
         <main id="main">
-          {/* The name as a monument; the mind gathers behind it. */}
-          <section id="top" data-mind="hero" aria-labelledby="hero-title" className="relative h-[200svh]">
-            {/* The opening holds for a screen of scrolling while the reader goes into the mind. */}
-            <div className="sticky top-0 h-svh min-h-[620px] overflow-hidden">
-            <div className="absolute inset-x-0 top-[22%] md:top-1/2 md:-translate-y-1/2">
-              <h1 id="hero-title" data-monument aria-label="Welcome to Ray’s mind" className="mind-monument origin-center px-3 text-center font-serif text-[21.2vw] uppercase leading-[0.86] tracking-[-0.045em]">
-                <span className="inline-flex overflow-hidden pb-[0.04em]">
-                  {[...MONUMENT].map((c, i) => (
-                    <span key={i} className="mind-letter" style={{ "--i": i }}>
-                      {c === " " ? " " : c}
-                    </span>
-                  ))}
-                </span>
+          {/* The first door. */}
+          <section id="top" data-door="hero" data-shade="0.88,0.3,0.3,0.35,0" aria-labelledby="hero-title" className="relative flex min-h-svh items-start">
+            <div className="rm-frame relative pt-[20svh]">
+              <p className="rm-rise text-[12px] tracking-[0.35em] text-ivory/85">RAYANSH SINGH</p>
+              <h1 id="hero-title" className="rm-title rm-hero mt-4 max-w-[13ch] text-[10vw] leading-[1] md:text-[clamp(40px,3.4vw,60px)]">
+                Welcome to Ray&apos;s mind
               </h1>
-            </div>
-            <div data-hero-fade className="mind-rise absolute inset-x-5 bottom-6 flex flex-col gap-5 md:inset-x-8 md:bottom-8 md:flex-row md:items-end md:justify-between">
-              <div className="max-w-[36ch]">
-                <p className="text-[19px] font-medium leading-[1.45] md:text-[22px]">{copy.heroSub.text}</p>
-                <a href="#intro" className="mind-button mt-5">
-                  Step inside
+              <div className="rm-rise">
+                <p className="mt-5 text-[18px]">{person.bioShort}</p>
+                <p className="mt-2 max-w-[38ch] text-[15px] leading-[1.55] text-ivory/80">Walk through the worlds that shaped him: Socialsect, boxing, travel, his book and his podcast.</p>
+                <span aria-hidden="true" className="mt-7 block h-px w-12 bg-ivory/60" />
+                <a href="#threshold" data-enter className="group mt-7 inline-flex min-h-11 items-center gap-4 text-[15px]">
+                  <Mouse />
+                  <span>Scroll to explore</span>
+                  <svg viewBox="0 0 16 16" aria-hidden="true" className="size-4 transition-transform group-hover:translate-x-1"><path d="M2 8h11M9 4l4 4-4 4" fill="none" stroke="currentColor" strokeWidth="1.6" /></svg>
                 </a>
               </div>
-              <a href="#intro" className="mind-link hidden text-[17px] font-medium md:inline">
-                Scroll to enter
-              </a>
-            </div>
             </div>
           </section>
 
-          {/* Ray in his own words, beside his own photograph. */}
-          <section id="intro" data-mind="intro" aria-labelledby="intro-title" className="relative flex min-h-[120svh] items-center">
-            <div data-reveal-group className="mind-frame grid py-32 lg:min-h-svh lg:grid-cols-12 lg:items-center lg:gap-8 lg:py-0">
-              {/* Ray himself, in his own published photograph. */}
-              <figure className="lg:col-span-6 lg:row-start-1">
-                <div data-frame className="aspect-[4/5] overflow-hidden bg-[#dbe6f7] lg:aspect-auto lg:h-[76svh]">
-                  {/* eslint-disable-next-line @next/next/no-img-element -- pre-built static WebP */}
-                  <img
-                    src={optSrc(person.portrait.src, 1600)}
-                    srcSet={optSrcSet(person.portrait.src)}
-                    sizes="(min-width: 1024px) 50vw, 100vw"
-                    alt={person.portrait.alt}
-                    width={person.portrait.width}
-                    height={person.portrait.height}
-                    decoding="async"
-                    className="h-full w-full object-cover object-[46%_30%]"
-                  />
-                </div>
-                <figcaption className="mt-4 flex items-baseline justify-between gap-6 text-[15px]">
-                  <span>Rayansh Singh, founder of Socialsect.</span>
-                  <a href={person.portrait.source.href} target="_blank" rel="noopener noreferrer" className="mind-link shrink-0 text-ink/60">
-                    Photo: {person.portrait.source.label}
-                  </a>
-                </figcaption>
-              </figure>
-              <div className="mt-12 lg:col-span-5 lg:col-start-8 lg:row-start-1 lg:mt-0">
-                <h2 id="intro-title" aria-label={sentence(copy.identityHeadline.text)} className="font-serif text-[clamp(36px,3.4vw,52px)] leading-[1.02] tracking-[-0.02em]">
-                  <Rise text={sentence(copy.identityHeadline.text)} />
-                </h2>
-                <p data-scrub className="mt-8 text-[19px] leading-[1.45] md:text-[clamp(21px,1.75vw,26px)] md:leading-[1.38]">
-                  <Scrub text={copy.identityBody.text} />
-                </p>
-                <p data-in className="mt-8 max-w-[44ch] text-[17px] leading-[1.65]">
-                  This site is a map of that mind: six regions, each one a part of the story. Hover a region to light it, and step in.
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <section id="map" data-mind="map" aria-labelledby="map-title" className="relative min-h-[260svh]">
-            <div data-reveal-group className="mind-frame sticky top-0 flex h-svh flex-col justify-between pb-10 pt-24 md:pt-28">
-              <h2 id="map-title" aria-label="Six regions. One mind." className="max-w-[16ch] font-serif text-[clamp(36px,3.4vw,52px)] leading-[1.02] tracking-[-0.02em]">
-                <Rise text="Six regions. One mind." />
+          {/* The first door opens while this is read. */}
+          <section id="threshold" tabIndex={-1} data-door="threshold" data-shade="0,0,0,0.75,0" aria-labelledby="threshold-title" className="relative min-h-[170svh] outline-none">
+            <div data-reveal-group className="rm-frame sticky top-0 flex h-svh flex-col items-center justify-end pb-[14svh] text-center">
+              <h2 id="threshold-title" aria-label="I've never been just one thing." data-rise className="rm-title text-[9vw] leading-[1] md:text-[clamp(44px,4.4vw,76px)]">
+                <Rise text="I've never been just one thing." />
               </h2>
-              <div>
-                <p className="text-[15px]">Hover or tap a region to step inside.</p>
-                {/* The same map as a plain list, for keyboards, screen readers and small screens. */}
-                <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[17px] md:hidden">
-                  {REGIONS.map((r) => (
-                    <li key={r.id}>
-                      <a href={`#${r.id}`} className="inline-flex min-h-11 items-center gap-2">
-                        <span className="size-2 rounded-full" style={{ background: r.color }} aria-hidden="true" />
-                        {r.name}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              <p data-in className="mt-5 max-w-[44ch] text-[17px] leading-[1.5]">&ldquo;{copy.identityBody.text}&rdquo;</p>
             </div>
           </section>
 
-          <Chapter index={R.journey.index} region={R.journey.region} subtitle="The path that shaped who I am today." body={copy.originBody.text}>
-            <p>&ldquo;{quotes.origin.text}&rdquo;</p>
-            <ol className="mt-5 space-y-2">
-              {timeline.map((e) => (
-                <li key={e.title}>
-                  <span className="font-semibold">{e.title}.</span> {e.description}
-                </li>
+          <Chapter id="journey" line={copy.originBody.text} source={ABOUT}>
+            <div className="flex items-end gap-5">
+              <div className="w-[38%] shrink-0">
+                <Picture img={person.portrait} className="aspect-[4/5]" />
+              </div>
+              <p className="text-[16px] leading-[1.6]">&ldquo;{copy.identityBody.text}&rdquo;</p>
+            </div>
+            <p className="mt-5 text-[16px] leading-[1.6]">&ldquo;{quotes.origin.text}&rdquo;</p>
+            <ol className="mt-5 space-y-2 text-[15px] leading-[1.5]">
+              {timeline.slice(0, 5).map((e) => (
+                <li key={e.title}><span className="font-semibold">{e.title}.</span> <span className="text-ivory/85">{e.description}</span></li>
               ))}
             </ol>
+            <p className="mt-4 text-[13px] text-ivory/70">Ray&apos;s photograph and words, from gosocialsect.com/about. Dates are being added with him.</p>
           </Chapter>
 
-          <Chapter index={R.ventures.index} region={R.ventures.region} subtitle="Ideas into impact." body={copy.buildingBody.text}>
-            <p>
-              <span className="font-semibold">Socialsect.</span> {venture.role}. {venture.sector}. India, the US and the UK, now building in the UAE.
-            </p>
-            <p className="mt-4">What it holds to: {values.join(", ")}.</p>
-            <a href={venture.verifiedLinks[0].href} target="_blank" rel="noopener noreferrer" className="mind-link mt-4 inline-block">
-              Visit gosocialsect.com
-            </a>
+          <Chapter id="ventures" line="I built Socialsect because I kept seeing brilliant doctors being let down by agencies that didn't understand their world." source={ABOUT}>
+            <p className="rm-title text-[40px] leading-none text-gold">{venture.name}</p>
+            <p className="mt-3 text-[15px]">{venture.role} · {venture.sector} · India, the US and the UK; building in the UAE</p>
+            <p className="mt-5 text-[16px] leading-[1.6]">&ldquo;{copy.buildingBody.text}&rdquo;</p>
+            <ul className="mt-5 grid grid-cols-1 gap-x-6 gap-y-1 text-[16px] sm:grid-cols-2">
+              {values.map((v) => <li key={v}>{v}</li>)}
+            </ul>
+            <a href={venture.verifiedLinks[0].href} target="_blank" rel="noopener noreferrer" className="rm-button mt-6">Visit gosocialsect.com</a>
           </Chapter>
 
-          <Chapter index={R.discipline.index} region={R.discipline.region} subtitle={sentence(st.discipline.headline)} body={copy.disciplineBody.text}>
-            <p>Boxing is a practice, not a title: the fight is the one before the ring.</p>
+          <Chapter id="discipline" line="Boxing taught me that the most important fight is the one you have with yourself before you ever step into the ring." source={ABOUT}>
+            <p className="text-[16px] leading-[1.6]">&ldquo;{copy.disciplineBody.text}&rdquo; Boxing is a practice for Ray, not a title.</p>
+            <div className="mt-5"><Picture img={images.boxer} caption={`${credit(images.boxer)} Not Ray: his own training footage will be added once approved.`} /></div>
           </Chapter>
 
-          <Chapter index={R.exploration.index} region={R.exploration.region} subtitle="New places. New perspectives." body={copy.motionBody.text}>
-            <p className="font-serif text-[22px]">India, the US, the UK, the UAE</p>
-            <p className="mt-2">Where Ray has built Socialsect, and where it is growing next.</p>
-          </Chapter>
-
-          <Chapter index={R.expression.index} region={R.expression.region} subtitle={`${book.title}.`} body={`Ray wrote a book. In his words: “${copy.storiesBody.text}”`}>
-            <blockquote className="font-serif text-[22px] leading-[1.45]">&ldquo;{quotes.book.text}&rdquo;</blockquote>
-            <p className="mt-3">From {book.title}</p>
-          </Chapter>
-
-          <Chapter index={R.ideas.index} region={R.ideas.region} subtitle="What's next." body={copy.thinkingBody.text}>
-            <p className="font-serif text-[22px]">{show.title}</p>
-            <p className="mt-2">{show.description}</p>
-            <ul className="mt-3 space-y-1">
-              {show.episodes.map((e) => (
-                <li key={e.title}>
-                  {e.title}, {e.duration}
+          <Chapter id="exploration" line="Somewhere between all the airports and different clocks, I learned that the best businesses are built on understanding people, not markets." source={ABOUT}>
+            <ul className="grid grid-cols-2 gap-4">
+              {places.map((p) => (
+                <li key={p.name}>
+                  <Picture img={p.img} />
+                  <p className="rm-title mt-2 text-[24px] leading-none">{p.name}</p>
+                  <p className="mt-1 text-[14px] text-ivory/85">{p.note}</p>
                 </li>
               ))}
             </ul>
-            <p className="mt-4 flex flex-wrap gap-6">
-              {show.links.map((l) => (
-                <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" className="mind-link">
-                  {l.label}
-                </a>
-              ))}
-            </p>
-            <p className="mt-5 font-serif text-[22px]">{sentence(st.unknown.headline)}</p>
+            <p className="mt-4 text-[13px] leading-[1.5] text-ivory/70">Pictures: {places.map((p) => credit(p.img)).join(" ")} Ray&apos;s own travel photographs are to be added.</p>
           </Chapter>
 
-          <section data-mind="close" aria-labelledby="close-title" className="relative flex min-h-[130svh] items-end pb-[16svh]">
-            <div data-reveal-group className="mind-frame">
-              <h2 id="close-title" data-in className="font-serif text-[clamp(40px,6vw,96px)] leading-[0.92] tracking-[-0.035em]">
-                Different thoughts.
-                <br />
-                One mind.
-              </h2>
-              <p data-in className="mt-8 max-w-[40ch] text-[clamp(19px,1.6vw,22px)] leading-[1.5]">
-                &ldquo;{copy.unknownBody.text}&rdquo;
-              </p>
-            </div>
-          </section>
+          <Chapter id="expression" line="We spend our lives collecting things worth carrying." source={`From ${book.title}, quoted on gosocialsect.com/about`}>
+            <p className="text-[16px] leading-[1.6]">Ray wrote a book, <em>{book.title}</em>. In his words: &ldquo;{copy.storiesBody.text}&rdquo;</p>
+            <blockquote className="mt-5 text-[19px] leading-[1.5]">&ldquo;{quotes.book.text}&rdquo;</blockquote>
+            <p className="mt-4 text-[13px] text-ivory/70">{book.note}</p>
+          </Chapter>
 
-          {/* Ways to reach Ray, set as display rows. */}
-          <section id="connect" aria-labelledby="connect-title" className="mind-pad relative grid bg-[#ff7a1f] pb-20 pt-24 md:pb-24 md:pt-32 lg:grid-cols-12 lg:gap-8">
-            <div data-reveal-group className="lg:col-span-4">
-              <h2 id="connect-title" data-in className="font-serif text-[clamp(36px,3.4vw,52px)] leading-[1.05] tracking-[-0.01em]">
-                {sentence(copy.contactHeadline.text)}
-              </h2>
-              <p data-in className="mt-5 max-w-[40ch] text-[17px] leading-[1.6]">{copy.contactBody.text}</p>
-            </div>
-            <ul data-reveal-group className="mt-12 lg:col-span-8 lg:col-start-5 lg:mt-0">
-              {[
-                { label: "Write to Ray", note: `Email ${EMAIL}`, href: mail },
-                { label: "Socialsect", note: `The company Ray founded. ${venture.sector}.`, href: venture.verifiedLinks[0].href, ext: true },
-                { label: show.title, note: `Ray's podcast, on ${show.links.map((l) => l.label).join(" and ")}.`, href: show.links[0].href, ext: true },
-              ].map((row, i) => (
-                <li key={row.label} data-in className={i % 2 ? "bg-[#ff8a38]" : ""}>
-                  <a
-                    href={row.href}
-                    {...(row.ext ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-                    className="group flex items-center justify-between gap-6 px-5 py-7 transition-colors duration-300 hover:bg-[#050f16] hover:text-[#ff7a1f] md:px-8 md:py-9"
-                  >
-                    <span>
-                      <span className="block font-serif text-[clamp(34px,4.4vw,72px)] leading-none tracking-[-0.01em]">{row.label}</span>
-                      <span className="mt-3 block text-[16px] md:text-[17px]">{row.note}</span>
-                    </span>
-                    <svg viewBox="0 0 24 24" aria-hidden="true" className="size-[clamp(22px,2.4vw,36px)] shrink-0 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1">
-                      <path d="M6 18 18 6M8 6h10v10" fill="none" stroke="currentColor" strokeWidth="2" />
-                    </svg>
-                  </a>
-                </li>
-              ))}
+          <Chapter id="ideas" line="The day I stop being curious is the day I stop being useful." source={ABOUT}>
+            <p className="rm-title text-[34px] leading-none">{show.title}</p>
+            <p className="mt-2 text-[14px] text-ivory/80">A podcast hosted by {show.host}.</p>
+            <p className="mt-3 text-[16px] leading-[1.55]">{show.description}</p>
+            <ul className="mt-3 space-y-1 text-[15px]">
+              {show.episodes.map((e) => <li key={e.title}>{e.title} <span className="text-ivory/70">· {e.duration}</span></li>)}
             </ul>
+            <p className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-[15px]">
+              {show.links.map((l) => <a key={l.href} href={l.href} target="_blank" rel="noopener noreferrer" className="rm-link">Listen on {l.label}</a>)}
+            </p>
+            <p className="mt-6 text-[14px] text-ivory/80">The unknown ahead. Future possibilities, not achievements:</p>
+            <ul className="mt-2 space-y-1 text-[16px]">
+              {possibilities.map((p) => <li key={p.text}>{p.text}</li>)}
+            </ul>
+          </Chapter>
+
+          {/* Through the final door, into the light. */}
+          <section id="close" data-door="close" data-shade="0.88,0.3,0.25,0.55,0.15" aria-labelledby="close-title" className="relative flex min-h-[150svh] items-end">
+            <div data-reveal-group className="rm-frame relative pb-[16svh]">
+              <p data-in className="text-[12px] tracking-[0.35em] text-ivory/90">RAYANSH SINGH</p>
+              <h2 id="close-title" aria-label="Still being written." data-rise className="rm-title mt-4 max-w-[14ch] text-[10vw] leading-[1] md:text-[clamp(38px,3.2vw,56px)]">
+                <Rise text="Still being written." />
+              </h2>
+              <p data-in className="mt-5 text-[17px]">{person.bioShort}</p>
+              <p data-in className="mt-5 max-w-[44ch] text-[17px] leading-[1.6] text-ivory/90">&ldquo;{copy.unknownBody.text}&rdquo;</p>
+              <p data-in className="mt-1 text-[13px] text-ivory/75">{ABOUT}</p>
+            </div>
           </section>
         </main>
 
-        {/* The close: an invitation, the ways in, and the name set across the whole page. */}
-        <footer className="relative overflow-hidden bg-[#050f16] text-[#f6f3ec]">
-          <div data-reveal-group className="mind-frame grid gap-14 pt-24 md:pt-32 lg:grid-cols-12 lg:gap-8">
-            <div data-in className="lg:col-span-6">
-              <p className="font-serif text-[clamp(48px,5.6vw,96px)] leading-[1] tracking-[-0.01em]">
-                Let&apos;s build
-                <br />
-                what&apos;s next.
-              </p>
-              <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
-                <a href={mail} className="mind-button mind-button-inverse">
-                  Write to Ray
-                </a>
-                <a href={mail} className="mind-link text-[17px]">
-                  {EMAIL}
-                </a>
-              </div>
+        <footer className="relative z-10 overflow-hidden bg-ink-deep">
+          <div className="rm-frame grid gap-14 pb-16 pt-24 md:grid-cols-2 lg:grid-cols-12 lg:gap-8">
+            <div className="md:col-span-2 lg:col-span-5">
+              <p className="text-[13px] font-semibold tracking-[0.35em]">RAYMINDSET</p>
+              <p className="rm-title mt-6 max-w-[16ch] text-[34px] leading-[1.05] md:text-[44px]">Good conversations change things.</p>
+              <p className="mt-5 max-w-[42ch] text-[16px] leading-[1.6] text-ivory/85">{copy.contactBody.text}</p>
+              <a href={`mailto:${EMAIL}?subject=Hello%20Ray`} className="rm-button mt-8">Write to Ray</a>
             </div>
-            <nav data-in aria-label="Footer" className="grid grid-cols-2 gap-x-8 gap-y-10 text-[17px] sm:grid-cols-3 lg:col-span-6 lg:pt-4">
-              <div>
-                <p className="text-[15px] text-[#f6f3ec]/60">Explore the mind</p>
-                <ul className="mt-4 space-y-2.5">
-                  {REGIONS.map((r) => (
-                    <li key={r.id}>
-                      <a href={`#${r.id}`} className="mind-link inline-flex items-center gap-2.5">
-                        <span className="size-2 rounded-full" style={{ background: r.color }} aria-hidden="true" />
-                        {r.name}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="text-[15px] text-[#f6f3ec]/60">Ray&apos;s work</p>
-                <ul className="mt-4 space-y-2.5">
-                  <li>
-                    <a href={venture.verifiedLinks[0].href} target="_blank" rel="noopener noreferrer" className="mind-link">
-                      Socialsect
-                    </a>
-                  </li>
-                  {show.links.map((l) => (
-                    <li key={l.href}>
-                      <a href={l.href} target="_blank" rel="noopener noreferrer" className="mind-link">
-                        {show.title} on {l.label}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="text-[15px] text-[#f6f3ec]/60">More of this site</p>
-                <ul className="mt-4 space-y-2.5">
-                  <li>
-                    <a href="#top" className="mind-link">Back to the beginning</a>
-                  </li>
-                  <li>
-                    <a href="/museum" className="mind-link">The Mind Museum</a>
-                  </li>
-                  <li>
-                    <a href="/atlas" className="mind-link">The Atlas</a>
-                  </li>
-                </ul>
-              </div>
-            </nav>
-          </div>
-          <div className="mind-frame mt-24 flex flex-wrap items-start justify-between gap-x-8 gap-y-3 text-[13px]">
-            <p>© 2026 {person.canonicalName}</p>
-            <details className="max-w-[720px]">
-              <summary className="cursor-pointer">Credits for the 3D models and photographs</summary>
-              <ul className="mt-3 space-y-1.5 pb-4 leading-[1.5]">
-                {CREDITS.map((c) => (
-                  <li key={c.page}>
-                    <a href={c.page} target="_blank" rel="noopener noreferrer" className="mind-link">
-                      {c.title}
-                    </a>
-                    , {c.creator},{" "}
-                    <a href={c.licenseUrl} target="_blank" rel="noopener noreferrer" className="mind-link">
-                      {c.license}
+            <nav aria-label="Chapters in the footer" className="lg:col-span-3 lg:col-start-7">
+              <p className="text-[13px] tracking-[0.25em] text-gold">EXPLORE</p>
+              <ol className="mt-5 space-y-3 text-[16px]">
+                {chapters.map((c) => (
+                  <li key={c.id}>
+                    <a href={`#${c.id}`} className="group inline-flex items-baseline gap-3 text-ivory/90 transition-colors hover:text-ivory">
+                      <span className="w-6 text-[13px] text-ivory/55 group-hover:text-gold">{C[c.id].n}</span>
+                      {c.name}
                     </a>
                   </li>
                 ))}
+              </ol>
+            </nav>
+            <div className="lg:col-span-3">
+              <p className="text-[13px] tracking-[0.25em] text-gold">CONNECT</p>
+              <ul className="mt-5 space-y-3 text-[16px]">
+                <li><a href={`mailto:${EMAIL}?subject=Hello%20Ray`} className="rm-link">{EMAIL}</a></li>
+                <li><a href={venture.verifiedLinks[0].href} target="_blank" rel="noopener noreferrer" className="rm-link">Socialsect</a></li>
+                {show.links.map((l) => (
+                  <li key={l.href}><a href={l.href} target="_blank" rel="noopener noreferrer" className="rm-link">{show.title} on {l.label}</a></li>
+                ))}
               </ul>
-            </details>
+              <a href="#top" className="mt-10 inline-flex items-center gap-3 text-[15px] text-ivory/90 hover:text-ivory">
+                <Mouse />
+                Back to top
+              </a>
+            </div>
           </div>
-          {/* The name, whole, across the page: it rises letter by letter as the page ends. */}
-          <p aria-hidden="true" data-footer-name className="mind-monument mt-10 flex justify-between overflow-hidden px-3 pb-[0.06em] font-serif text-[17.6vw] uppercase leading-[0.86] text-[#ff7a1f]">
-            {[..."Raymindset"].map((c, i) => (
-              <span key={i} data-char className="inline-block">
-                {c}
-              </span>
-            ))}
-          </p>
+          <div className="rm-frame"><div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-2 border-t border-ivory/15 py-6 text-[13px] text-ivory/70">
+            <p>© 2026 {person.canonicalName}</p>
+            <p>Every world is real-time 3D, built in code. Surfaces: Poly Haven, CC0. Words and photograph: Rayansh Singh, gosocialsect.com/about.</p>
+          </div></div>
+          <p aria-hidden="true" className="rm-title select-none whitespace-nowrap pb-2 text-center text-[13.5vw] leading-[0.8] text-ivory/[0.07]">Raymindset</p>
         </footer>
-      </Mind>
-    </>
+      </Doors>
+    </div>
   );
 }

@@ -13,10 +13,10 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 
 export const metadata = {
   metadataBase: new URL(siteUrl),
-  title: "RayMindset — Welcome to Ray's Mind",
+  title: "RayMindset — The Doors of Possibility",
   description: "Explore the ideas, ventures, travels, writing, and experiences of Rayansh Singh.",
   openGraph: {
-    title: "RayMindset — Welcome to Ray's Mind",
+    title: "RayMindset — The Doors of Possibility",
     description: "Explore the ideas, ventures, travels, writing, and experiences of Rayansh Singh.",
     type: "website",
     url: "/",

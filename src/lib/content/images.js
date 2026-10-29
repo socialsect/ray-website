@@ -4,7 +4,7 @@ export const OPT_WIDTHS = [960, 1600, 2400];
 const ALL_WIDTHS = [960, 1600, 2400, 4000];
 
 export function optSrc(src, width) {
-  const m = /^\/assets\/(stage|world|ray|museum|mind)\/(.+)\.(jpe?g|png|webp)$/i.exec(src);
+  const m = /^\/assets\/(stage|world|ray|museum)\/(.+)\.(jpe?g|png|webp)$/i.exec(src);
   if (!m) return src;
   const widths = m[1] === "museum" ? ALL_WIDTHS : OPT_WIDTHS;
   const w = widths.find((x) => x >= width) ?? widths[widths.length - 1];
